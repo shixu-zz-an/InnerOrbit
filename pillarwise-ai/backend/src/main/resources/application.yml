@@ -1,0 +1,14 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  profile: ${APP_PROFILE:local}
+  sqlite:
+    path: ${SQLITE_PATH:./data/pillarwise.db}
+  ai:
+    provider: ${AI_PROVIDER:mock}
+    base-url: ${AI_BASE_URL:}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:mock-v1}
+  auth:
+    provider: ${AUTH_PROVIDER:dev}

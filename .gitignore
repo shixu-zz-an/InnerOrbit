@@ -1,0 +1,32 @@
+.DS_Store
+**/.DS_Store
+
+# Local editor and OS state
+.idea/
+.vscode/
+*.swp
+*.log
+
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+
+# Xcode / iOS
+**/ios/Flutter/.last_build_id
+**/DerivedData/
+
+# Java / Maven
+**/target/
+
+# Local runtime data
+**/data/*.db
+**/data/*.db-shm
+**/data/*.db-wal
+
+# Codex/local temporary build output
+**/.codex_tmp_build/

@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: PillarWise AI Local API
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: OK }
+  /api/v1/auth/dev-session:
+    get:
+      summary: Create or retrieve local dev session
+      responses:
+        '200': { description: OK }
+  /api/v1/me:
+    get:
+      summary: Current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Delete current account
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/birth-profiles:
+    post:
+      summary: Create birth profile and chart
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/birth-profiles/primary:
+    get:
+      summary: Get primary birth profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/bazi/charts/{birthProfileId}:
+    get:
+      summary: Get BaZi chart for birth profile
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: birthProfileId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/v1/reports/life-blueprint:
+    post:
+      summary: Generate life blueprint preview or full report
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/today:
+    get:
+      summary: Get daily insight
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: birthProfileId
+          schema: { type: string }
+        - in: query
+          name: date
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: OK }
+  /api/v1/ai/conversations:
+    post:
+      summary: Create AI conversation
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/ai/messages:
+    post:
+      summary: Send AI message
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/relationships:
+    get:
+      summary: List relationships
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create relationship profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/relationships/{relationshipId}/report:
+    post:
+      summary: Generate relationship report
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: relationshipId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/v1/subscriptions/entitlement:
+    get:
+      summary: Get entitlement
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/subscriptions/local/activate:
+    post:
+      summary: Activate local fake premium
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+  /api/v1/journal:
+    get:
+      summary: List journal entries
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create journal entry
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: OK }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
