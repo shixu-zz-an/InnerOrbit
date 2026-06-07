@@ -372,8 +372,8 @@ class ProfileSetupScreen extends ConsumerWidget {
                 Text(
                   _uiText(
                     context,
-                    en: 'Use an IANA timezone such as America/New_York, Europe/London, or Asia/Shanghai.',
-                    zh: '请输入 IANA 时区，例如 America/New_York、Europe/London 或 Asia/Shanghai。',
+                    en: 'Use the timezone for the place of birth, for example Asia/Shanghai or America/New_York.',
+                    zh: '请填写出生地对应时区，例如 Asia/Shanghai 或 America/New_York。',
                   ),
                   style: AppTextStyles.footnote.copyWith(
                     color: AppColors.inkMuted,
@@ -642,8 +642,8 @@ class BirthPlaceScreen extends ConsumerWidget {
           Text(
             _uiText(
               context,
-              en: 'Timezone is validated by the backend. Coordinates are omitted unless a real location service is connected.',
-              zh: '后端会校验时区是否合法。未接入真实地点服务前，不会提交假经纬度。',
+              en: 'If the exact city is unclear, use the closest city and timezone you trust.',
+              zh: '如果不确定精确城市，请填写你确认的最近城市和时区。',
             ),
             style: AppTextStyles.footnote.copyWith(color: AppColors.inkMuted),
           ),
@@ -827,16 +827,16 @@ class PreviewScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppButton(
-              text: l.unlockBlueprint,
-              icon: CupertinoIcons.lock_open,
-              onPressed: () => showPaywall(context, ref),
+              text: l.continueFree,
+              onPressed: () =>
+                  ref.read(appControllerProvider.notifier).enterMain(),
             ),
             const SizedBox(height: AppSpacing.sm),
             AppButton(
-              text: l.continueFree,
-              variant: AppButtonVariant.secondary,
-              onPressed: () =>
-                  ref.read(appControllerProvider.notifier).enterMain(),
+              text: l.unlockBlueprint,
+              icon: CupertinoIcons.lock_open,
+              variant: AppButtonVariant.ghost,
+              onPressed: () => showPaywall(context, ref),
             ),
           ],
         ),
@@ -853,20 +853,31 @@ class PreviewScreen extends ConsumerWidget {
             _copy(context, preview['headline']) ?? l.previewDefaultSubtitle,
             style: AppTextStyles.callout.copyWith(color: AppColors.inkMuted),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          for (final card in cards) ...[
-            AppInsightCard(
-              label: _copy(context, card['label']),
-              title: _copy(context, card['title']) ?? '',
-              body: _lockedBody(
-                context,
-                _copy(context, card['body']) ?? '',
-                card['locked'] == true,
-              ),
-              locked: card['locked'] == true,
-              tone: _toneForLabel(card['label']?.toString()),
+          if (cards.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _SoftRowGroup(
+              children: [
+                for (var index = 0; index < cards.length; index++)
+                  _StackedInfoRow(
+                    label:
+                        _copy(context, cards[index]['label']) ??
+                        _uiText(context, en: 'Blueprint', zh: '蓝图'),
+                    title: _copy(context, cards[index]['title']) ?? '',
+                    body: _lockedBody(
+                      context,
+                      _copy(context, cards[index]['body']) ?? '',
+                      cards[index]['locked'] == true,
+                    ),
+                    icon: cards[index]['locked'] == true
+                        ? CupertinoIcons.lock_fill
+                        : CupertinoIcons.checkmark_circle,
+                    tone: cards[index]['locked'] == true
+                        ? AppTone.neutral
+                        : _toneForLabel(cards[index]['label']?.toString()),
+                    showDivider: index != cards.length - 1,
+                  ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.md),
           ],
           const SizedBox(height: AppSpacing.xxxl),
         ],
@@ -1006,6 +1017,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       trailing: AppIconButton(
         icon: CupertinoIcons.arrow_clockwise,
         label: l.refresh,
+        quiet: true,
         onPressed: state.loading
             ? null
             : () => ref.read(appControllerProvider.notifier).loadMainData(),
@@ -1059,7 +1071,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   Text(
                     _uiText(
                       context,
-                      en: 'Let one honest signal be enough',
+                      en: 'One honest signal is enough',
                       zh: '让一个真实信号就足够',
                     ),
                     style: AppTextStyles.title2,
@@ -1068,7 +1080,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   Text(
                     _uiText(
                       context,
-                      en: 'Finish one grounded choice today before opening every possibility at once.',
+                      en: 'Choose the next step you can actually finish today.',
                       zh: '今天先完成一个踏实选择，不急着同时打开所有可能。',
                     ),
                     style: AppTextStyles.callout.copyWith(
@@ -1104,91 +1116,70 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.xs,
-              ),
-              child: Column(
-                children: [
-                  _StackedInfoRow(
-                    label: l.weeklyTheme,
-                    title:
-                        _copy(context, today['weeklyTheme']) ??
-                        _uiText(
-                          context,
-                          en: 'Preparation is not waiting for perfect',
-                          zh: '准备不是等到完美',
-                        ),
-                    icon: CupertinoIcons.calendar,
-                    tone: AppTone.primary,
+            _SoftRowGroup(
+              children: [
+                _StackedInfoRow(
+                  label: l.weeklyTheme,
+                  title:
+                      _copy(context, today['weeklyTheme']) ??
+                      _uiText(
+                        context,
+                        en: 'Preparation is not waiting for perfect',
+                        zh: '准备不是等到完美',
+                      ),
+                  icon: CupertinoIcons.calendar,
+                  tone: AppTone.neutral,
+                ),
+                _StackedInfoRow(
+                  label: _uiText(context, en: 'Today action', zh: '今日行动'),
+                  title:
+                      _copy(context, today['action']) ??
+                      _uiText(
+                        context,
+                        en: 'Complete one direct action first',
+                        zh: '先完成一个直接行动',
+                      ),
+                  icon: CupertinoIcons.checkmark_circle,
+                  tone: AppTone.secondary,
+                ),
+                _StackedInfoRow(
+                  label: _uiText(context, en: 'Reminder', zh: '今日提醒'),
+                  title: _uiText(
+                    context,
+                    en: 'Return from the outcome to the next step',
+                    zh: '把注意力从结果拉回下一步',
                   ),
-                  _StackedInfoRow(
-                    label: _uiText(context, en: 'Today action', zh: '今日行动'),
-                    title:
-                        _copy(context, today['action']) ??
-                        _uiText(
-                          context,
-                          en: 'Complete one direct action first',
-                          zh: '先完成一个直接行动',
-                        ),
-                    icon: CupertinoIcons.checkmark_circle,
-                    tone: AppTone.secondary,
-                  ),
-                  _StackedInfoRow(
-                    label: _uiText(context, en: 'Reminder', zh: '今日提醒'),
-                    title: _uiText(
-                      context,
-                      en: 'Bring attention back from the result to the next step',
-                      zh: '把注意力从结果拉回下一步',
-                    ),
-                    icon: CupertinoIcons.arrow_turn_down_right,
-                    tone: AppTone.neutral,
-                    showDivider: false,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppSectionHeader(
-              text: _uiText(context, en: 'Today signals', zh: '今日信号'),
-            ),
-            AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.xs,
-              ),
-              child: Column(
-                children: [
-                  _StackedInfoRow(
-                    label: l.challenge,
-                    title:
-                        _copy(context, challenge['title']) ??
-                        _uiText(
-                          context,
-                          en: 'Over-carrying the outcome',
-                          zh: '过度承担结果',
-                        ),
-                    body: _copy(context, challenge['body']),
-                    icon: CupertinoIcons.exclamationmark_circle,
-                    tone: AppTone.warning,
-                  ),
-                  _StackedInfoRow(
-                    label: l.opportunity,
-                    title:
-                        _copy(context, opportunity['title']) ??
-                        _uiText(
-                          context,
-                          en: 'A cleaner next step',
-                          zh: '更清晰的下一步',
-                        ),
-                    body: _copy(context, opportunity['body']),
-                    icon: CupertinoIcons.leaf_arrow_circlepath,
-                    tone: AppTone.secondary,
-                    showDivider: false,
-                  ),
-                ],
-              ),
+                  icon: CupertinoIcons.arrow_turn_down_right,
+                  tone: AppTone.neutral,
+                ),
+                _StackedInfoRow(
+                  label: l.challenge,
+                  title:
+                      _copy(context, challenge['title']) ??
+                      _uiText(
+                        context,
+                        en: 'Over-carrying the outcome',
+                        zh: '过度承担结果',
+                      ),
+                  body: _copy(context, challenge['body']),
+                  icon: CupertinoIcons.exclamationmark_circle,
+                  tone: AppTone.warning,
+                ),
+                _StackedInfoRow(
+                  label: l.opportunity,
+                  title:
+                      _copy(context, opportunity['title']) ??
+                      _uiText(
+                        context,
+                        en: 'A cleaner next step',
+                        zh: '更清晰的下一步',
+                      ),
+                  body: _copy(context, opportunity['body']),
+                  icon: CupertinoIcons.leaf_arrow_circlepath,
+                  tone: AppTone.secondary,
+                  showDivider: false,
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
             if (latestJournal != null) ...[
@@ -1299,25 +1290,25 @@ class BlueprintScreen extends ConsumerWidget {
                 : AppStatusTag(text: dayMaster, tone: AppTone.primary),
           ),
           AppCard(
-            tone: AppTone.primary,
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppStatusTag(text: l.coreArchetype, tone: AppTone.primary),
-                const SizedBox(height: AppSpacing.md),
-                Text(archetype, style: AppTextStyles.title2),
+                Text(l.coreArchetype, style: AppTextStyles.caption),
+                const SizedBox(height: AppSpacing.xs),
+                Text(headline, style: AppTextStyles.title3),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  headline,
-                  style: AppTextStyles.callout.copyWith(
+                  summary,
+                  style: AppTextStyles.subhead.copyWith(
                     color: AppColors.inkMuted,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  text: l.askAboutThis,
-                  variant: AppButtonVariant.secondary,
-                  icon: CupertinoIcons.chat_bubble,
+                const SizedBox(height: AppSpacing.md),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(44, 36),
+                  alignment: Alignment.centerLeft,
                   onPressed: () {
                     final prompt =
                         '${source['coreArchetype'] ?? ''}. ${source['headline'] ?? ''}'
@@ -1331,6 +1322,13 @@ class BlueprintScreen extends ConsumerWidget {
                           ).languageCode,
                         );
                   },
+                  child: Text(
+                    l.askAboutThis,
+                    style: AppTextStyles.subhead.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1355,47 +1353,43 @@ class BlueprintScreen extends ConsumerWidget {
               text: _uiText(context, en: 'Blueprint sections', zh: '蓝图章节'),
             ),
           if (cards.isNotEmpty)
-            AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.xs,
-              ),
-              child: Column(
-                children: [
-                  for (var index = 0; index < cards.length; index++)
-                    _StackedInfoRow(
-                      label:
-                          _copy(context, cards[index]['label']) ??
-                          _uiText(context, en: 'Section', zh: '章节'),
-                      title:
-                          _copy(context, cards[index]['title']) ??
-                          _uiText(context, en: 'Blueprint note', zh: '蓝图线索'),
-                      body: _lockedBody(
-                        context,
-                        _copy(context, cards[index]['body']) ?? '',
-                        cards[index]['locked'] == true,
-                      ),
-                      icon: cards[index]['locked'] == true
-                          ? CupertinoIcons.lock_fill
-                          : CupertinoIcons.chevron_right,
-                      tone: _toneForLabel(cards[index]['label']?.toString()),
-                      trailing: cards[index]['locked'] == true
-                          ? const Icon(
-                              CupertinoIcons.lock_fill,
-                              color: AppColors.inkFaint,
-                              size: 16,
-                            )
-                          : null,
-                      showDivider: index != cards.length - 1,
-                      onTap: () => showBlueprintSectionDetail(
-                        context,
-                        ref,
-                        cards[index],
-                        state.blueprint?['reportId']?.toString(),
-                      ),
+            _SoftRowGroup(
+              children: [
+                for (var index = 0; index < cards.length; index++)
+                  _StackedInfoRow(
+                    label:
+                        _copy(context, cards[index]['label']) ??
+                        _uiText(context, en: 'Section', zh: '章节'),
+                    title:
+                        _copy(context, cards[index]['title']) ??
+                        _uiText(context, en: 'Blueprint note', zh: '蓝图线索'),
+                    body: _lockedBody(
+                      context,
+                      _copy(context, cards[index]['body']) ?? '',
+                      cards[index]['locked'] == true,
                     ),
-                ],
-              ),
+                    icon: cards[index]['locked'] == true
+                        ? CupertinoIcons.lock_fill
+                        : CupertinoIcons.chevron_right,
+                    tone: cards[index]['locked'] == true
+                        ? AppTone.neutral
+                        : _toneForLabel(cards[index]['label']?.toString()),
+                    trailing: cards[index]['locked'] == true
+                        ? const Icon(
+                            CupertinoIcons.lock_fill,
+                            color: AppColors.inkFaint,
+                            size: 16,
+                          )
+                        : null,
+                    showDivider: index != cards.length - 1,
+                    onTap: () => showBlueprintSectionDetail(
+                      context,
+                      ref,
+                      cards[index],
+                      state.blueprint?['reportId']?.toString(),
+                    ),
+                  ),
+              ],
             ),
           if (full.isEmpty)
             Padding(
@@ -1479,6 +1473,7 @@ class _AskScreenState extends ConsumerState<AskScreen> {
         ),
         canSend: hasInput,
         sending: state.askingGuide,
+        sendLabel: _uiText(context, en: 'Send question', zh: '发送问题'),
         onChanged: (value) =>
             setState(() => hasInput = value.trim().isNotEmpty),
         onSend: () {
@@ -1513,7 +1508,6 @@ class _AskScreenState extends ConsumerState<AskScreen> {
               for (final prompt in prompts)
                 AppSuggestionChip(
                   text: prompt,
-                  icon: CupertinoIcons.chat_bubble,
                   onTap: state.askingGuide ? null : () => ask(prompt),
                 ),
             ],
@@ -1692,7 +1686,6 @@ class MeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final state = ref.watch(appControllerProvider);
-    final localBuild = ref.watch(appConfigProvider).flavor == 'local';
     final premium = _asMap(state.entitlement)['premiumActive'] == true;
     final preview = _asMap(state.blueprint?['preview']);
     final full = _asMap(state.blueprint?['fullReport']);
@@ -1738,13 +1731,13 @@ class MeScreen extends ConsumerWidget {
             description: premium
                 ? _uiText(
                     context,
-                    en: 'Your full blueprint and expanded guide access are available on this account.',
-                    zh: '此账户已可查看完整蓝图，并使用更多 AI 引导能力。',
+                    en: 'Full blueprint access is active on this account.',
+                    zh: '此账户已开通完整蓝图访问。',
                   )
                 : _uiText(
                     context,
-                    en: 'You can keep using the preview and core reflection flow. Premium adds the full blueprint and more guide questions.',
-                    zh: '你可以继续使用蓝图预览和核心反思流程。高级版包含完整蓝图和更多 AI 追问。',
+                    en: 'Keep using Today, Ask, and your preview. Premium adds the full blueprint when purchases are available.',
+                    zh: '你可以继续使用今日、提问和蓝图预览。高级版将在购买能力接入后开放完整蓝图。',
                   ),
             primaryActionText: premium
                 ? l.tabBlueprint
@@ -1784,34 +1777,6 @@ class MeScreen extends ConsumerWidget {
                 CupertinoPageRoute<void>(
                   builder: (_) => const SavedJournalScreen(),
                 ),
-              ),
-            ),
-          ),
-          AppSectionHeader(
-            text: _uiText(context, en: 'Explore more', zh: '探索更多'),
-          ),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: AppListTile(
-              title: l.tabLove,
-              subtitle: _uiText(
-                context,
-                en: 'Relationship insights as a secondary beta workflow.',
-                zh: '关系洞察作为二级 Beta 功能保留。',
-              ),
-              leading: const AppAvatar(
-                icon: CupertinoIcons.heart,
-                tone: AppTone.neutral,
-                size: 32,
-              ),
-              trailing: AppStatusTag(
-                text: _uiText(context, en: 'Beta', zh: 'Beta'),
-                tone: AppTone.warning,
-              ),
-              showChevron: true,
-              showDivider: false,
-              onTap: () => Navigator.of(context).push(
-                CupertinoPageRoute<void>(builder: (_) => const LoveScreen()),
               ),
             ),
           ),
@@ -1948,73 +1913,6 @@ class MeScreen extends ConsumerWidget {
               ],
             ),
           ),
-          if (localBuild) ...[
-            AppSectionHeader(
-              text: _uiText(context, en: 'Developer', zh: '开发者设置'),
-            ),
-            AppCard(
-              padding: EdgeInsets.zero,
-              child: AppListTile(
-                title: _uiText(
-                  context,
-                  en: 'Enable local Premium test',
-                  zh: '开启本地高级版测试',
-                ),
-                subtitle: _uiText(
-                  context,
-                  en: 'Development only. Production must use Apple In-App Purchase.',
-                  zh: '仅限开发测试。正式版必须接入 Apple IAP。',
-                ),
-                leading: const AppAvatar(
-                  icon: CupertinoIcons.hammer,
-                  tone: AppTone.neutral,
-                  size: 32,
-                ),
-                trailing: state.activatingPremium
-                    ? const CupertinoActivityIndicator()
-                    : null,
-                showChevron: true,
-                showDivider: false,
-                onTap: state.activatingPremium
-                    ? null
-                    : () async {
-                        final ok = await ref
-                            .read(appControllerProvider.notifier)
-                            .activatePremium();
-                        if (!context.mounted) return;
-                        showNotice(
-                          context,
-                          ok
-                              ? _uiText(
-                                  context,
-                                  en: 'Local Premium enabled',
-                                  zh: '本地高级版已开启',
-                                )
-                              : _uiText(
-                                  context,
-                                  en: 'Local unlock failed',
-                                  zh: '本地开通失败',
-                                ),
-                          ok
-                              ? _uiText(
-                                  context,
-                                  en: 'This is a development-only entitlement.',
-                                  zh: '这是仅限开发环境的权益。',
-                                )
-                              : _nullableErrorCopy(
-                                      context,
-                                      ref.read(appControllerProvider).error,
-                                    ) ??
-                                    _uiText(
-                                      context,
-                                      en: 'Please try again later.',
-                                      zh: '请稍后再试。',
-                                    ),
-                        );
-                      },
-              ),
-            ),
-          ],
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Text(
@@ -2117,7 +2015,7 @@ class _AiAnswerCard extends ConsumerWidget {
     final l = context.l10n;
     final sections = _asList(answer['sections']);
     return AppCard(
-      tone: AppTone.primary,
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2126,19 +2024,19 @@ class _AiAnswerCard extends ConsumerWidget {
             children: [
               const AppAvatar(
                 icon: CupertinoIcons.sparkles,
-                tone: AppTone.primary,
-                size: 34,
+                tone: AppTone.neutral,
+                size: 32,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppStatusTag(text: l.guideLabel, tone: AppTone.primary),
+                    AppStatusTag(text: l.guideLabel, tone: AppTone.neutral),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       _copy(context, answer['headline']) ?? '',
-                      style: AppTextStyles.title3,
+                      style: AppTextStyles.headline,
                     ),
                     if ((answer['summary']?.toString() ?? '').isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.sm),
@@ -2297,6 +2195,174 @@ class _QuietIntro extends StatelessWidget {
   }
 }
 
+class _SoftRowGroup extends StatelessWidget {
+  const _SoftRowGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.lightBorder, width: 0.6),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _PremiumBenefitRow extends StatelessWidget {
+  const _PremiumBenefitRow({
+    required this.icon,
+    required this.text,
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: AppColors.lightDivider))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.inkMuted, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.subhead.copyWith(color: AppColors.ink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductSheet extends StatelessWidget {
+  const _ProductSheet({
+    required this.title,
+    this.body,
+    this.children = const [],
+    this.primaryText,
+    this.onPrimary,
+    this.primaryLoading = false,
+    this.primaryDestructive = false,
+    this.secondaryText,
+    this.onSecondary,
+  });
+
+  final String title;
+  final String? body;
+  final List<Widget> children;
+  final String? primaryText;
+  final VoidCallback? onPrimary;
+  final bool primaryLoading;
+  final bool primaryDestructive;
+  final String? secondaryText;
+  final VoidCallback? onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+        ),
+        margin: const EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.xl,
+          AppSpacing.xl,
+          AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sheet),
+          border: Border.all(color: AppColors.lightBorder, width: 0.6),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.lightDivider,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(title, style: AppTextStyles.title2),
+            if (body != null && body!.trim().isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Text(
+                    body!,
+                    style: AppTextStyles.callout.copyWith(
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (children.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              ...children,
+            ],
+            if (primaryText != null || secondaryText != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              if (primaryText != null)
+                AppButton(
+                  text: primaryText!,
+                  loading: primaryLoading,
+                  variant: primaryDestructive
+                      ? AppButtonVariant.destructive
+                      : AppButtonVariant.primary,
+                  onPressed: primaryLoading ? null : onPrimary,
+                ),
+              if (secondaryText != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(double.infinity, 44),
+                  onPressed: onSecondary,
+                  child: Text(
+                    secondaryText!,
+                    style: AppTextStyles.subhead.copyWith(
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StackedInfoRow extends StatelessWidget {
   const _StackedInfoRow({
     required this.label,
@@ -2350,16 +2416,14 @@ class _StackedInfoRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  maxLines: 2,
                   style: AppTextStyles.caption.copyWith(color: colors.accent),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
-                Text(title, maxLines: 3, style: AppTextStyles.headline),
+                Text(title, style: AppTextStyles.headline),
                 if (body != null && body!.trim().isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
                     body!,
-                    maxLines: 4,
                     style: AppTextStyles.footnote.copyWith(
                       color: AppColors.inkMuted,
                     ),
@@ -2398,30 +2462,10 @@ class _AskEmptyHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-      child: Column(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-            ),
-            child: const Icon(
-              CupertinoIcons.chat_bubble_2,
-              color: AppColors.primary,
-              size: 21,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.subhead.copyWith(color: AppColors.inkMuted),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Text(
+        text,
+        style: AppTextStyles.subhead.copyWith(color: AppColors.inkMuted),
       ),
     );
   }
@@ -2485,52 +2529,104 @@ void showBlueprintSectionDetail(
             );
           }
 
-          return CupertinoActionSheet(
-            title: Text(title),
-            message: Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: Column(
-                children: [
-                  if (label != null && label.trim().isNotEmpty) ...[
-                    Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.footnote.copyWith(
-                        color: AppColors.inkMuted,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                  Text(body, textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-            actions: [
-              if (locked)
-                CupertinoActionSheetAction(
-                  onPressed: () {
+          return _ProductSheet(
+            title: title,
+            body: body,
+            primaryText: locked ? l.unlockBlueprint : l.saveToJournal,
+            primaryLoading: saving,
+            onPrimary: locked
+                ? () {
                     Navigator.of(sheetContext).pop();
                     showPaywall(context, ref, source: 'blueprint_section');
-                  },
-                  child: Text(l.unlockBlueprint),
-                )
-              else
-                CupertinoActionSheetAction(
-                  onPressed: saveSection,
-                  child: saving
-                      ? const CupertinoActivityIndicator()
-                      : Text(l.saveToJournal),
-                ),
+                  }
+                : saveSection,
+            secondaryText: l.cancel,
+            onSecondary: () {
+              if (saving) return;
+              Navigator.of(sheetContext).pop();
+            },
+            children: [
+              if (label != null && label.trim().isNotEmpty)
+                AppStatusTag(text: label, tone: AppTone.neutral),
             ],
-            cancelButton: CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(sheetContext).pop(),
-              child: Text(l.cancel),
-            ),
           );
         },
       );
     },
   );
+}
+
+void _showProductSheet(
+  BuildContext context, {
+  required String title,
+  String? body,
+  List<Widget> children = const [],
+  String? primaryText,
+  VoidCallback? onPrimary,
+  bool primaryDestructive = false,
+  String? secondaryText,
+  VoidCallback? onSecondary,
+}) {
+  showCupertinoModalPopup<void>(
+    context: context,
+    builder: (sheetContext) => _ProductSheet(
+      title: title,
+      body: body,
+      primaryText: primaryText,
+      onPrimary: onPrimary,
+      primaryDestructive: primaryDestructive,
+      secondaryText: secondaryText,
+      onSecondary: onSecondary ?? () => Navigator.of(sheetContext).pop(),
+      children: children,
+    ),
+  );
+}
+
+class _LanguageChoiceRow extends StatelessWidget {
+  const _LanguageChoiceRow({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.showDivider = true,
+  });
+
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(double.infinity, 48),
+      onPressed: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          border: showDivider
+              ? const Border(bottom: BorderSide(color: AppColors.lightDivider))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyles.body.copyWith(color: AppColors.ink),
+              ),
+            ),
+            if (selected)
+              const Icon(
+                CupertinoIcons.checkmark_circle_fill,
+                color: AppColors.primary,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 void showPaywall(
@@ -2590,74 +2686,117 @@ void showPaywall(
 
       return StatefulBuilder(
         builder: (sheetContext, setSheetState) {
-          return CupertinoActionSheet(
-            title: Text(l.paywallTitle),
-            message: Column(
-              children: [
-                Text(
-                  localBuild
-                      ? _uiText(
-                          context,
-                          en: 'Premium includes the full blueprint, more AI follow-up, and deeper relationship reports. This local build can enable it for testing; production must use Apple In-App Purchase.',
-                          zh: '高级版包含完整蓝图、更多 AI 追问和更深入的关系报告。当前本地构建可用于测试开通；正式版必须接入 Apple IAP。',
-                        )
-                      : _uiText(
-                          context,
-                          en: 'Premium will include the full blueprint, more AI follow-up, and deeper relationship reports. In-App Purchase is not connected yet, so this build will not take payment.',
-                          zh: '高级版将包含完整蓝图、更多 AI 追问和更深入的关系报告。当前版本尚未接入 App 内购买，不会收取费用。',
-                        ),
-                ),
-                if (actionError != null) ...[
+          return SafeArea(
+            top: false,
+            child: Container(
+              margin: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.sheet),
+                border: Border.all(color: AppColors.lightBorder, width: 0.6),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.paywallTitle, style: AppTextStyles.title2),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    actionError!,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.footnote.copyWith(
-                      color: AppColors.destructive,
+                    localBuild
+                        ? _uiText(
+                            context,
+                            en: 'Preview the complete experience in this build. Production purchases must use Apple In-App Purchase.',
+                            zh: '你可以在当前构建中预览完整体验。正式版购买必须通过 Apple App 内购买完成。',
+                          )
+                        : _uiText(
+                            context,
+                            en: 'Premium is planned for full blueprint access and expanded guide depth. This build will not take payment.',
+                            zh: '高级版将用于完整蓝图和更深入的引导能力。当前版本不会收取费用。',
+                          ),
+                    style: AppTextStyles.callout.copyWith(
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _PremiumBenefitRow(
+                    icon: CupertinoIcons.square_grid_2x2,
+                    text: _uiText(
+                      context,
+                      en: 'Full blueprint sections',
+                      zh: '完整蓝图章节',
+                    ),
+                  ),
+                  _PremiumBenefitRow(
+                    icon: CupertinoIcons.chat_bubble_2,
+                    text: _uiText(
+                      context,
+                      en: 'More room for follow-up questions',
+                      zh: '更多追问空间',
+                    ),
+                  ),
+                  _PremiumBenefitRow(
+                    icon: CupertinoIcons.bookmark,
+                    text: _uiText(
+                      context,
+                      en: 'A deeper reflection archive',
+                      zh: '更完整的反思记录',
+                    ),
+                    showDivider: false,
+                  ),
+                  if (actionError != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      actionError!,
+                      style: AppTextStyles.footnote.copyWith(
+                        color: AppColors.destructive,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    text: localBuild
+                        ? _uiText(context, en: 'Preview Premium', zh: '预览高级版')
+                        : _uiText(context, en: 'Got it', zh: '我知道了'),
+                    loading: submitting,
+                    onPressed: () {
+                      if (submitting) return;
+                      ref
+                          .read(appControllerProvider.notifier)
+                          .trackEvent('upgrade_tapped', {
+                            'source': source,
+                            'mode': localBuild
+                                ? 'local_preview'
+                                : 'iap_not_ready',
+                          });
+                      if (localBuild) {
+                        activate(setSheetState);
+                      } else {
+                        Navigator.of(sheetContext).pop();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(double.infinity, 44),
+                    onPressed: submitting
+                        ? null
+                        : () => Navigator.of(sheetContext).pop(),
+                    child: Text(
+                      l.notNow,
+                      style: AppTextStyles.subhead.copyWith(
+                        color: AppColors.inkMuted,
+                      ),
                     ),
                   ),
                 ],
-              ],
-            ),
-            actions: [
-              if (localBuild)
-                CupertinoActionSheetAction(
-                  onPressed: () {
-                    if (submitting) return;
-                    ref.read(appControllerProvider.notifier).trackEvent(
-                      'upgrade_tapped',
-                      {'source': source, 'mode': 'local_test'},
-                    );
-                    activate(setSheetState);
-                  },
-                  child: submitting
-                      ? const CupertinoActivityIndicator()
-                      : Text(
-                          _uiText(
-                            context,
-                            en: 'Enable Local Premium Test',
-                            zh: '开启本地高级版测试',
-                          ),
-                        ),
-                )
-              else
-                CupertinoActionSheetAction(
-                  onPressed: () {
-                    ref.read(appControllerProvider.notifier).trackEvent(
-                      'upgrade_tapped',
-                      {'source': source, 'mode': 'iap_not_ready'},
-                    );
-                    Navigator.of(sheetContext).pop();
-                  },
-                  child: Text(_uiText(context, en: 'Got it', zh: '我知道了')),
-                ),
-            ],
-            cancelButton: CupertinoActionSheetAction(
-              onPressed: () {
-                if (submitting) return;
-                Navigator.of(sheetContext).pop();
-              },
-              child: Text(l.notNow),
+              ),
             ),
           );
         },
@@ -2812,37 +2951,45 @@ void showAddRelationship(BuildContext context, WidgetRef ref) {
 
 void showLanguageSheet(BuildContext context, WidgetRef ref) {
   final l = context.l10n;
+  final current = ref.read(appControllerProvider).localeCode;
   showCupertinoModalPopup<void>(
     context: context,
-    builder: (context) => CupertinoActionSheet(
-      title: Text(l.appLanguageTitle),
-      actions: [
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
+    builder: (sheetContext) => _ProductSheet(
+      title: l.appLanguageTitle,
+      body: _uiText(
+        context,
+        en: 'Choose how PillarWise should display text on this device.',
+        zh: '选择 PillarWise 在此设备上的显示语言。',
+      ),
+      secondaryText: l.cancel,
+      onSecondary: () => Navigator.of(sheetContext).pop(),
+      children: [
+        _LanguageChoiceRow(
+          title: l.systemLanguage,
+          selected: current == null,
+          onTap: () {
+            Navigator.of(sheetContext).pop();
             ref.read(appControllerProvider.notifier).setLocaleCode(null);
           },
-          child: Text(l.systemLanguage),
         ),
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
+        _LanguageChoiceRow(
+          title: l.english,
+          selected: current == 'en',
+          onTap: () {
+            Navigator.of(sheetContext).pop();
             ref.read(appControllerProvider.notifier).setLocaleCode('en');
           },
-          child: Text(l.english),
         ),
-        CupertinoActionSheetAction(
-          onPressed: () {
-            Navigator.of(context).pop();
+        _LanguageChoiceRow(
+          title: l.chineseSimplified,
+          selected: current == 'zh',
+          showDivider: false,
+          onTap: () {
+            Navigator.of(sheetContext).pop();
             ref.read(appControllerProvider.notifier).setLocaleCode('zh');
           },
-          child: Text(l.chineseSimplified),
         ),
       ],
-      cancelButton: CupertinoActionSheetAction(
-        onPressed: () => Navigator.of(context).pop(),
-        child: Text(l.cancel),
-      ),
     ),
   );
 }
@@ -2881,76 +3028,54 @@ void showRelationshipReport(
 
 void showLegal(BuildContext context, String title, String body) {
   final l = context.l10n;
-  showCupertinoDialog<void>(
-    context: context,
-    builder: (context) => CupertinoAlertDialog(
-      title: Text(title),
-      content: Text(body),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.done),
-        ),
-      ],
-    ),
+  _showProductSheet(
+    context,
+    title: title,
+    body: body,
+    primaryText: l.done,
+    onPrimary: () => Navigator.of(context).pop(),
   );
 }
 
 void showNotice(BuildContext context, String title, String body) {
   final l = context.l10n;
-  showCupertinoDialog<void>(
-    context: context,
-    builder: (context) => CupertinoAlertDialog(
-      title: Text(title),
-      content: Text(body),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.done),
-        ),
-      ],
-    ),
+  _showProductSheet(
+    context,
+    title: title,
+    body: body,
+    primaryText: l.done,
+    onPrimary: () => Navigator.of(context).pop(),
   );
 }
 
 void confirmDeleteAccount(BuildContext context, WidgetRef ref) {
   final l = context.l10n;
-  showCupertinoDialog<void>(
+  showCupertinoModalPopup<void>(
     context: context,
-    builder: (context) => CupertinoAlertDialog(
-      title: Text(l.deleteTitle),
-      content: Text(l.deleteBody),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.cancel),
-        ),
-        CupertinoDialogAction(
-          isDestructiveAction: true,
-          onPressed: () async {
-            Navigator.of(context).pop();
-            final deleted = await ref
-                .read(appControllerProvider.notifier)
-                .deleteAccount();
-            if (!deleted && context.mounted) {
-              showNotice(
-                context,
-                _uiText(context, en: 'Delete failed', zh: '删除失败'),
-                _nullableErrorCopy(
-                      context,
-                      ref.read(appControllerProvider).error,
-                    ) ??
-                    _uiText(
-                      context,
-                      en: 'Please try again later.',
-                      zh: '请稍后再试。',
-                    ),
-              );
-            }
-          },
-          child: Text(l.deleteAccount),
-        ),
-      ],
+    builder: (sheetContext) => _ProductSheet(
+      title: l.deleteTitle,
+      body: l.deleteBody,
+      primaryText: l.deleteAccount,
+      primaryDestructive: true,
+      onPrimary: () async {
+        Navigator.of(sheetContext).pop();
+        final deleted = await ref
+            .read(appControllerProvider.notifier)
+            .deleteAccount();
+        if (!deleted && context.mounted) {
+          showNotice(
+            context,
+            _uiText(context, en: 'Delete failed', zh: '删除失败'),
+            _nullableErrorCopy(
+                  context,
+                  ref.read(appControllerProvider).error,
+                ) ??
+                _uiText(context, en: 'Please try again later.', zh: '请稍后再试。'),
+          );
+        }
+      },
+      secondaryText: l.cancel,
+      onSecondary: () => Navigator.of(sheetContext).pop(),
     ),
   );
 }

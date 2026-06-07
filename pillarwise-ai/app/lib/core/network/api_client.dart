@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import '../storage/local_store.dart';
@@ -24,12 +25,16 @@ class ApiClient {
     T Function(Object? json) parse, {
     Map<String, Object?>? query,
   }) async {
-    final response = await _dio.get<Object?>(
+    return _send(
+      'GET',
       path,
-      queryParameters: query,
-      options: await _options(),
+      () async => _dio.get<Object?>(
+        path,
+        queryParameters: query,
+        options: await _options(),
+      ),
+      parse,
     );
-    return _unwrap(response.data, parse);
   }
 
   Future<T> post<T>(
@@ -37,12 +42,13 @@ class ApiClient {
     Object? body,
     T Function(Object? json) parse,
   ) async {
-    final response = await _dio.post<Object?>(
+    return _send(
+      'POST',
       path,
-      data: body,
-      options: await _options(),
+      () async =>
+          _dio.post<Object?>(path, data: body, options: await _options()),
+      parse,
     );
-    return _unwrap(response.data, parse);
   }
 
   Future<T> put<T>(
@@ -50,12 +56,13 @@ class ApiClient {
     Object? body,
     T Function(Object? json) parse,
   ) async {
-    final response = await _dio.put<Object?>(
+    return _send(
+      'PUT',
       path,
-      data: body,
-      options: await _options(),
+      () async =>
+          _dio.put<Object?>(path, data: body, options: await _options()),
+      parse,
     );
-    return _unwrap(response.data, parse);
   }
 
   Future<T> delete<T>(
@@ -63,12 +70,55 @@ class ApiClient {
     Object? body,
     T Function(Object? json) parse,
   ) async {
-    final response = await _dio.delete<Object?>(
+    return _send(
+      'DELETE',
       path,
-      data: body,
-      options: await _options(),
+      () async =>
+          _dio.delete<Object?>(path, data: body, options: await _options()),
+      parse,
     );
-    return _unwrap(response.data, parse);
+  }
+
+  Future<T> _send<T>(
+    String method,
+    String path,
+    Future<Response<Object?>> Function() request,
+    T Function(Object? json) parse,
+  ) async {
+    final url = '${config.apiBaseUrl}$path';
+    debugPrint('[Pillarwise][API] $method $url');
+    try {
+      final response = await request();
+      debugPrint(
+        '[Pillarwise][API] $method $url -> ${response.statusCode} '
+        'payload=${response.data.runtimeType}',
+      );
+      return _unwrap(response.data, parse);
+    } on ApiException catch (error) {
+      debugPrint('[Pillarwise][API] $method $url API_ERROR $error');
+      rethrow;
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      final message =
+          error.message ?? error.error?.toString() ?? 'Network request failed.';
+      debugPrint(
+        '[Pillarwise][API] $method $url DIO_ERROR '
+        'type=${error.type} status=$status error=${error.error} message=$message',
+      );
+      throw ApiException(
+        'NETWORK_ERROR',
+        'Network request failed: $message',
+        details: {
+          'method': method,
+          'path': path,
+          'status': status,
+          'type': error.type.name,
+        },
+      );
+    } catch (error) {
+      debugPrint('[Pillarwise][API] $method $url UNKNOWN_ERROR $error');
+      rethrow;
+    }
   }
 
   Future<Options> _options() async {

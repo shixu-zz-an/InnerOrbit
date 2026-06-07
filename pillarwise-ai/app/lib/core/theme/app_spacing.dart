@@ -11,5 +11,7 @@ class AppSpacing {
   static const double xxxl = 40;
 
   static const double page = 20;
+  static const double section = 28;
+  static const double group = 14;
   static const double tabBottomInset = 104;
 }

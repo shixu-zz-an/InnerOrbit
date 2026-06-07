@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_config.dart';
@@ -254,26 +255,47 @@ class AppController extends StateNotifier<AppState> {
   Future<void> initialize() async {
     state = state.copyWith(initialized: false, loading: true, clearError: true);
     try {
+      final config = ref.read(appConfigProvider);
+      debugPrint(
+        '[Pillarwise][Init] start flavor=${config.flavor} '
+        'apiBaseUrl=${config.apiBaseUrl}',
+      );
       final store = await _store;
+      debugPrint('[Pillarwise][Init] local store ready');
       state = state.copyWith(
         draft: OnboardingDraft.fromMap(store.readDraft()),
         localeCode: store.readLocaleCode(),
       );
       final api = await _api;
+      debugPrint('[Pillarwise][Init] api client ready');
       var token = await store.readToken();
+      debugPrint(
+        '[Pillarwise][Init] token exists=${token != null && token.isNotEmpty}',
+      );
       if (token == null || token.isEmpty) {
+        debugPrint('[Pillarwise][Init] creating dev session');
         token = await _createDevSession(api, store);
+        debugPrint(
+          '[Pillarwise][Init] dev session created=${token != null && token.isNotEmpty}',
+        );
       }
       JsonMap me;
       try {
+        debugPrint('[Pillarwise][Init] loading /me');
         me = await api.get<JsonMap>('/api/v1/me', _map);
       } on ApiException catch (error) {
+        debugPrint(
+          '[Pillarwise][Init] /me failed code=${error.code} message=${error.message}',
+        );
         if (error.code != 'UNAUTHORIZED') rethrow;
         await store.clearAuth();
+        debugPrint('[Pillarwise][Init] auth cleared after unauthorized');
         await _createDevSession(api, store);
+        debugPrint('[Pillarwise][Init] retrying /me');
         me = await api.get<JsonMap>('/api/v1/me', _map);
       }
       final hasProfile = me['hasPrimaryBirthProfile'] == true;
+      debugPrint('[Pillarwise][Init] /me loaded hasProfile=$hasProfile');
       state = state.copyWith(
         initialized: true,
         loading: false,
@@ -285,13 +307,16 @@ class AppController extends StateNotifier<AppState> {
         clearError: true,
       );
       if (hasProfile) {
+        debugPrint('[Pillarwise][Init] loading main data');
         await loadMainData();
       }
+      debugPrint('[Pillarwise][Init] complete');
       trackEvent('app_initialized', {
         'has_profile': hasProfile,
         'locale': state.localeCode ?? 'system',
       });
     } catch (error) {
+      debugPrint('[Pillarwise][Init] failed $error');
       state = state.copyWith(
         initialized: true,
         loading: false,
@@ -754,8 +779,10 @@ List<JsonMap> _list(Object? value) {
 }
 
 String _friendly(Object error) {
-  if (error is ApiException) return error.message;
-  return 'Something didn’t load right. Your data is safe. Please try again.';
+  if (error is ApiException) {
+    return '${error.code}: ${error.message} details=${error.details}';
+  }
+  return '${error.runtimeType}: $error';
 }
 
 String? _validateDraft(OnboardingDraft draft) {

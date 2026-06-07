@@ -3,27 +3,27 @@ import 'package:flutter/cupertino.dart';
 class AppColors {
   const AppColors._();
 
-  static const primary = Color(0xFF2563EB);
-  static const primarySoft = Color(0xFFEAF1FF);
-  static const secondary = Color(0xFF0F766E);
-  static const secondarySoft = Color(0xFFE6F5F3);
+  static const primary = Color(0xFF1F5FD6);
+  static const primarySoft = Color(0xFFEFF5FF);
+  static const secondary = Color(0xFF27736B);
+  static const secondarySoft = Color(0xFFEAF6F4);
   static const info = Color(0xFF2563EB);
   static const infoSoft = Color(0xFFEAF1FF);
 
-  static const lightBackground = Color(0xFFF6F7F9);
+  static const lightBackground = Color(0xFFF7F8FA);
   static const lightSurface = Color(0xFFFFFFFF);
-  static const lightSurfaceElevated = Color(0xFFFFFFFF);
-  static const lightSurfaceSubtle = Color(0xFFFAFBFC);
+  static const lightSurfaceElevated = Color(0xFFFEFFFF);
+  static const lightSurfaceSubtle = Color(0xFFFBFCFD);
   static const lightPressed = Color(0xFFEFF2F6);
-  static const lightDivider = Color(0x12111827);
-  static const lightBorder = Color(0x10111827);
-  static const lightDisabled = Color(0xFFE9EDF3);
-  static const lightDisabledText = Color(0xFF9AA3AF);
+  static const lightDivider = Color(0x0F111827);
+  static const lightBorder = Color(0x0D111827);
+  static const lightDisabled = Color(0xFFF0F2F5);
+  static const lightDisabledText = Color(0xFF9CA4AF);
 
   static const ink = Color(0xFF111827);
-  static const inkSecondary = Color(0xFF374151);
-  static const inkMuted = Color(0xFF6B7280);
-  static const inkFaint = Color(0xFF9CA3AF);
+  static const inkSecondary = Color(0xFF3F4652);
+  static const inkMuted = Color(0xFF737B88);
+  static const inkFaint = Color(0xFFA7AFBA);
 
   static const success = Color(0xFF198754);
   static const successSoft = Color(0xFFE7F6EE);
