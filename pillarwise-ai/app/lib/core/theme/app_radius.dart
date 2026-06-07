@@ -6,9 +6,10 @@ class AppRadius {
   static const double md = 12;
   static const double lg = 16;
   static const double xl = 22;
+  static const double xxl = 24;
   static const double pill = 999;
 
-  static const double card = sm;
-  static const double control = md;
-  static const double sheet = lg;
+  static const double card = xl;
+  static const double control = lg;
+  static const double sheet = xxl;
 }

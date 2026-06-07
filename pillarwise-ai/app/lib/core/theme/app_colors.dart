@@ -10,13 +10,15 @@ class AppColors {
   static const info = Color(0xFF2563EB);
   static const infoSoft = Color(0xFFEAF1FF);
 
-  static const lightBackground = Color(0xFFF5F6F8);
+  static const lightBackground = Color(0xFFF6F7F9);
   static const lightSurface = Color(0xFFFFFFFF);
   static const lightSurfaceElevated = Color(0xFFFFFFFF);
-  static const lightSurfaceSubtle = Color(0xFFFBFCFD);
-  static const lightPressed = Color(0xFFECEFF3);
-  static const lightDivider = Color(0x1A111827);
-  static const lightBorder = Color(0x14111827);
+  static const lightSurfaceSubtle = Color(0xFFFAFBFC);
+  static const lightPressed = Color(0xFFEFF2F6);
+  static const lightDivider = Color(0x12111827);
+  static const lightBorder = Color(0x10111827);
+  static const lightDisabled = Color(0xFFE9EDF3);
+  static const lightDisabledText = Color(0xFF9AA3AF);
 
   static const ink = Color(0xFF111827);
   static const inkSecondary = Color(0xFF374151);
@@ -43,11 +45,14 @@ class AppColors {
   static const background = lightBackground;
   static const surface = lightSurface;
   static const surfaceElevated = lightSurfaceElevated;
+  static const surfaceSubtle = lightSurfaceSubtle;
   static const textPrimary = ink;
   static const textSecondary = inkSecondary;
   static const textTertiary = inkMuted;
   static const border = lightBorder;
   static const divider = lightDivider;
+  static const disabled = lightDisabled;
+  static const disabledText = lightDisabledText;
   static const error = destructive;
   static const errorSoft = destructiveSoft;
 

@@ -75,6 +75,7 @@ class AppTabBar extends CupertinoTabBar {
          activeColor: AppColors.primary,
          inactiveColor: AppColors.inkFaint,
          backgroundColor: AppColors.surfaceElevated,
+         iconSize: 23,
          border: const Border(top: BorderSide(color: AppColors.lightDivider)),
        );
 }
@@ -96,7 +97,7 @@ class AppPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -140,7 +141,7 @@ class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(AppSpacing.lg),
+    this.padding = const EdgeInsets.all(AppSpacing.xl),
     this.onTap,
     this.tone = AppTone.neutral,
     this.selected = false,
@@ -160,9 +161,12 @@ class AppCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.lightSurface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: selected ? colors.accent : colors.border),
+        border: Border.all(
+          color: selected ? colors.accent : colors.border,
+          width: selected ? 1 : 0.8,
+        ),
         boxShadow: AppShadows.card,
       ),
       child: child,
@@ -300,8 +304,7 @@ class AppInsightCard extends StatelessWidget {
                       opacity: actionLoading ? 0.58 : 1,
                       child: Text(
                         actionText!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                         style: AppTextStyles.headline.copyWith(
                           color: AppColors.primary,
                         ),
@@ -345,7 +348,15 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !loading;
+    final hasAction = onPressed != null || loading;
     final colors = variant.colors;
+    final background = hasAction
+        ? colors.background
+        : colors.disabledBackground;
+    final foreground = hasAction
+        ? colors.foreground
+        : colors.disabledForeground;
+    final border = hasAction ? colors.border : colors.disabledBorder;
     return Semantics(
       button: true,
       enabled: enabled,
@@ -361,34 +372,32 @@ class AppButton extends StatelessWidget {
             : null,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 160),
-          opacity: enabled ? 1 : 0.42,
+          opacity: hasAction ? 1 : 0.92,
           child: Container(
-            height: 52,
+            height: 54,
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: colors.background,
+              color: background,
               borderRadius: BorderRadius.circular(AppRadius.control),
-              border: colors.border == null
-                  ? null
-                  : Border.all(color: colors.border!),
+              border: border == null ? null : Border.all(color: border),
             ),
             child: loading
-                ? CupertinoActivityIndicator(color: colors.foreground)
+                ? CupertinoActivityIndicator(color: foreground)
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (icon != null) ...[
-                        Icon(icon, size: 19, color: colors.foreground),
+                        Icon(icon, size: 18, color: foreground),
                         const SizedBox(width: AppSpacing.xs),
                       ],
                       Flexible(
                         child: Text(
                           text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
                           style: AppTextStyles.headline.copyWith(
-                            color: colors.foreground,
+                            color: foreground,
                           ),
                         ),
                       ),
@@ -440,11 +449,11 @@ class AppIconButton extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               border: Border.all(color: AppColors.lightBorder),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 19),
           ),
         ),
       ),
@@ -595,11 +604,17 @@ class AppInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.icon,
+    this.labelFlex = 2,
+    this.valueFlex = 4,
+    this.valueMaxLines = 2,
   });
 
   final String label;
   final String value;
   final IconData? icon;
+  final int labelFlex;
+  final int valueFlex;
+  final int valueMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -609,26 +624,24 @@ class AppInfoRow extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.inkMuted),
           const SizedBox(width: AppSpacing.xs),
         ],
-        Expanded(
+        Flexible(
+          flex: labelFlex,
           child: Text(
             label,
+            maxLines: 2,
             style: AppTextStyles.footnote.copyWith(color: AppColors.inkMuted),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Flexible(
+          flex: valueFlex,
           child: Align(
             alignment: Alignment.centerRight,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.subhead.copyWith(color: AppColors.ink),
-              ),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: valueMaxLines,
+              style: AppTextStyles.subhead.copyWith(color: AppColors.ink),
             ),
           ),
         ),
@@ -662,10 +675,10 @@ class AppListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = Container(
-      constraints: const BoxConstraints(minHeight: 58),
+      constraints: const BoxConstraints(minHeight: 54),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: 10,
       ),
       decoration: BoxDecoration(
         border: showDivider
@@ -685,8 +698,7 @@ class AppListTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                   style: AppTextStyles.body.copyWith(
                     color: destructive ? AppColors.destructive : AppColors.ink,
                   ),
@@ -695,8 +707,7 @@ class AppListTile extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
                     subtitle!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
                     style: AppTextStyles.footnote.copyWith(
                       color: AppColors.inkMuted,
                     ),
@@ -713,7 +724,7 @@ class AppListTile extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             const Icon(
               CupertinoIcons.chevron_right,
-              size: 18,
+              size: 16,
               color: AppColors.inkFaint,
             ),
           ],
@@ -1025,7 +1036,6 @@ class AppStatusTag extends StatelessWidget {
       child: Text(
         text,
         maxLines: 1,
-        overflow: TextOverflow.ellipsis,
         style: AppTextStyles.caption.copyWith(color: colors.accent),
       ),
     );
@@ -1111,17 +1121,11 @@ class AppMetricCard extends StatelessWidget {
             Icon(icon, color: colors.accent, size: 20),
             const SizedBox(height: AppSpacing.sm),
           ],
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.headline,
-          ),
+          Text(value, maxLines: 4, style: AppTextStyles.headline),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
             style: AppTextStyles.footnote.copyWith(color: AppColors.inkMuted),
           ),
         ],
@@ -1142,6 +1146,338 @@ class AppSettingItem extends AppListTile {
     super.showChevron,
     super.showDivider,
   });
+}
+
+class AppSuggestionChip extends StatelessWidget {
+  const AppSuggestionChip({
+    super.key,
+    required this.text,
+    this.icon,
+    this.onTap,
+  });
+
+  final String text;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final chip = AnimatedOpacity(
+      duration: const Duration(milliseconds: 140),
+      opacity: enabled ? 1 : 0.52,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: AppColors.lightBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: AppColors.inkMuted),
+              const SizedBox(width: AppSpacing.xxs),
+            ],
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 2,
+                style: AppTextStyles.footnote.copyWith(
+                  color: AppColors.inkSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!enabled) return chip;
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(36, 36),
+      onPressed: () {
+        HapticFeedback.selectionClick();
+        onTap?.call();
+      },
+      child: chip,
+    );
+  }
+}
+
+class AppBottomInputBar extends StatelessWidget {
+  const AppBottomInputBar({
+    super.key,
+    required this.controller,
+    required this.placeholder,
+    required this.canSend,
+    required this.onChanged,
+    required this.onSend,
+    this.sending = false,
+  });
+
+  final TextEditingController controller;
+  final String placeholder;
+  final bool canSend;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSend;
+  final bool sending;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = canSend && !sending;
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page,
+          AppSpacing.sm,
+          AppSpacing.page,
+          AppSpacing.md,
+        ),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceElevated,
+          border: Border(top: BorderSide(color: AppColors.lightDivider)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: CupertinoTextField(
+                controller: controller,
+                placeholder: placeholder,
+                textCapitalization: TextCapitalization.sentences,
+                minLines: 1,
+                maxLines: 4,
+                onChanged: onChanged,
+                onSubmitted: (_) {
+                  if (enabled) onSend();
+                },
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 13,
+                ),
+                style: AppTextStyles.body,
+                placeholderStyle: AppTextStyles.body.copyWith(
+                  color: AppColors.inkFaint,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.lightBorder),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(42, 42),
+              onPressed: enabled
+                  ? () {
+                      HapticFeedback.lightImpact();
+                      onSend();
+                    }
+                  : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: enabled || sending
+                      ? AppColors.primary
+                      : AppColors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: enabled || sending
+                      ? null
+                      : Border.all(color: AppColors.lightBorder),
+                ),
+                child: sending
+                    ? const CupertinoActivityIndicator(
+                        color: CupertinoColors.white,
+                        radius: 9,
+                      )
+                    : Icon(
+                        CupertinoIcons.arrow_up,
+                        color: enabled
+                            ? CupertinoColors.white
+                            : AppColors.disabledText,
+                        size: 19,
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AppProfileHeader extends StatelessWidget {
+  const AppProfileHeader({
+    super.key,
+    required this.name,
+    required this.blueprint,
+    required this.birthPlaceLabel,
+    required this.birthPlace,
+    this.actionText,
+    this.onAction,
+  });
+
+  final String name;
+  final String blueprint;
+  final String birthPlaceLabel;
+  final String birthPlace;
+  final String? actionText;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                ),
+                child: const Icon(
+                  CupertinoIcons.person_crop_circle,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, maxLines: 2, style: AppTextStyles.title3),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      blueprint,
+                      maxLines: 2,
+                      style: AppTextStyles.subhead.copyWith(
+                        color: AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppInfoRow(
+            icon: CupertinoIcons.location,
+            label: birthPlaceLabel,
+            value: birthPlace,
+            labelFlex: 2,
+            valueFlex: 5,
+            valueMaxLines: 1,
+          ),
+          if (actionText != null && onAction != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(44, 44),
+              alignment: Alignment.centerLeft,
+              onPressed: onAction,
+              child: Text(
+                actionText!,
+                style: AppTextStyles.headline.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AppPlanCard extends StatelessWidget {
+  const AppPlanCard({
+    super.key,
+    required this.planName,
+    required this.statusText,
+    required this.description,
+    required this.primaryActionText,
+    required this.onPrimaryAction,
+    required this.secondaryLabel,
+    required this.secondaryValue,
+    this.premium = false,
+  });
+
+  final String planName;
+  final String statusText;
+  final String description;
+  final String primaryActionText;
+  final VoidCallback onPrimaryAction;
+  final String secondaryLabel;
+  final String secondaryValue;
+  final bool premium;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(planName, style: AppTextStyles.title3),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      description,
+                      style: AppTextStyles.callout.copyWith(
+                        color: AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              AppStatusTag(
+                text: statusText,
+                tone: premium ? AppTone.success : AppTone.neutral,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            text: primaryActionText,
+            variant: premium
+                ? AppButtonVariant.ghost
+                : AppButtonVariant.secondary,
+            onPressed: onPrimaryAction,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppInfoRow(
+            label: secondaryLabel,
+            value: secondaryValue,
+            labelFlex: 2,
+            valueFlex: 5,
+            valueMaxLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class AppComposer extends StatelessWidget {
@@ -1269,7 +1605,6 @@ class AppTag extends StatelessWidget {
             child: Text(
               text,
               maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.subhead.copyWith(
                 color: selected ? CupertinoColors.white : AppColors.ink,
                 fontWeight: FontWeight.w600,
@@ -1470,19 +1805,29 @@ extension on AppButtonVariant {
       AppButtonVariant.primary => const _ButtonColors(
         background: AppColors.primary,
         foreground: CupertinoColors.white,
+        disabledBackground: AppColors.disabled,
+        disabledForeground: AppColors.disabledText,
       ),
       AppButtonVariant.secondary => const _ButtonColors(
         background: AppColors.primarySoft,
         foreground: AppColors.primary,
+        disabledBackground: AppColors.surfaceSubtle,
+        disabledForeground: AppColors.disabledText,
+        disabledBorder: AppColors.lightBorder,
       ),
       AppButtonVariant.destructive => const _ButtonColors(
         background: AppColors.destructive,
         foreground: CupertinoColors.white,
+        disabledBackground: AppColors.disabled,
+        disabledForeground: AppColors.disabledText,
       ),
       AppButtonVariant.ghost => const _ButtonColors(
-        background: AppColors.lightSurface,
+        background: AppColors.surface,
         foreground: AppColors.primary,
         border: AppColors.lightBorder,
+        disabledBackground: AppColors.surfaceSubtle,
+        disabledForeground: AppColors.disabledText,
+        disabledBorder: AppColors.lightBorder,
       ),
     };
   }
@@ -1492,12 +1837,18 @@ class _ButtonColors {
   const _ButtonColors({
     required this.background,
     required this.foreground,
+    required this.disabledBackground,
+    required this.disabledForeground,
     this.border,
+    this.disabledBorder,
   });
 
   final Color background;
   final Color foreground;
+  final Color disabledBackground;
+  final Color disabledForeground;
   final Color? border;
+  final Color? disabledBorder;
 }
 
 enum AppTone { neutral, primary, secondary, warning, destructive, success }

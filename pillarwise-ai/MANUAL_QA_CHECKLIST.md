@@ -1,97 +1,81 @@
-# Manual QA Checklist
+# MANUAL_QA_CHECKLIST
 
-## 1. 首次安装启动
-操作：卸载 App，重新安装并启动。
-预期：进入 Welcome，无白屏。
-失败表现：停留 loading 或错误页。
-页面：Welcome。
+## 1. 首次安装启动检查
 
-## 2. Onboarding
-操作：Welcome -> Disclaimer -> Profile Setup。
-预期：默认路径不超过三屏，能生成蓝图。
-失败表现：按钮不可点、picker 溢出。
-页面：Welcome、Disclaimer、Profile Setup。
+操作：清除 App 数据后启动。预期：先出现 Welcome，不白屏。失败表现：卡 loading、直接进空 Today。页面：Root、Welcome。
 
-## 3. 首页
-操作：完成蓝图后进入 Today。
-预期：看到今日重点、主按钮、今日信号和反思输入。
-失败表现：首页像菜单、无主行动。
-页面：Today。
+## 2. Onboarding 检查
 
-## 4. 核心闭环
-操作：点击“让向导帮我拆解”，等待 AI 返回，保存回答或反思。
-预期：loading 明确，成功保存到 Journal。
-失败表现：按钮重复提交、英文混入中文、保存无反馈。
-页面：Today、Ask、Saved Journal。
+操作：Welcome -> Disclaimer -> Profile Setup -> Generate。预期：不超过核心 3 段，用户必须确认必要出生资料和目标后才能生成。失败表现：按钮不可点、日期为空但无提示、地点为空但无提示。页面：Welcome、Disclaimer、ProfileSetup。
 
-## 5. 蓝图
-操作：进入 Blueprint，查看预览和锁定章节。
-预期：免费内容可读，锁定内容不误导。
-失败表现：空白、锁定内容无说明。
-页面：Blueprint。
+## 3. 登录/注册检查
 
-## 6. 会员页
-操作：点击 Preview/Blueprint/Me 的升级入口。
-预期：未接 IAP 时只显示说明，不展示虚假价格。
-失败表现：出现假购买按钮或订阅价格。
-页面：Paywall sheet。
+操作：首次启动 local backend。预期：dev session 自动创建；生产后应替换为 Apple/邮箱登录策略。失败表现：未授权错误无法恢复。页面：Root。
 
-## 7. 关系 Beta
-操作：Me -> Labs -> Relationship。
-预期：作为 Beta 二级入口可用，不占主 Tab。
-失败表现：主 Tab 仍有关系入口。
-页面：Me、Love。
+## 4. 首页检查
 
-## 8. 空状态
-操作：新账号未添加关系、未保存 Journal。
-预期：有解释和下一步按钮。
-失败表现：只有“暂无数据”。
-页面：Love、Saved Journal。
+操作：完成 preview 后进入 Today。预期：看到今日重点、主按钮、今日信号、反思输入、最近 Journal。失败表现：像菜单页、无主行动。页面：Today。
 
-## 9. 错误状态
-操作：断开后端或模拟弱网。
-预期：错误文案可理解，有重试。
-失败表现：技术错误码或白屏。
-页面：启动、Today、Ask。
+## 5. 核心功能闭环检查
 
-## 10. 权限
-操作：检查是否请求系统权限。
-预期：当前不强制请求权限。
-失败表现：无解释地弹权限。
-页面：全局。
+操作：Today 点击主按钮 -> Ask 返回回答 -> 保存。预期：Ask 有 loading，成功后 Journal 数量增加。失败表现：重复提交、无成功反馈。页面：Today、Ask、Saved Journal。
 
-## 11. 小屏 iPhone
-操作：iPhone SE 或小屏模拟器跑完整流程。
-预期：Profile Setup 可滚动，无 overflow。
-失败表现：按钮被遮挡、picker 溢出。
-页面：Profile Setup、Ask。
+## 6. 列表页检查
 
-## 12. 大屏 iPhone
-操作：iPhone Pro Max 跑完整流程。
-预期：布局不显得稀疏，底部 SafeArea 正常。
-失败表现：内容贴边或过空。
-页面：主 Tab。
+操作：保存多条 Journal 后进入 Saved Journal。预期：长列表可滚动，文字不溢出。失败表现：卡顿、内容重叠。页面：SavedJournal。
 
-## 13. 键盘遮挡
-操作：Ask 输入、反思输入、关系添加输入。
-预期：输入框和按钮不被键盘挡住。
-失败表现：无法提交或看不到输入。
-页面：Ask、Today、Love sheet。
+## 7. 详情页检查
 
-## 14. 设置页
-操作：切换语言、导出数据、查看法律说明。
-预期：中文/英文切换稳定，导出有反馈。
-失败表现：文案混乱或弹窗溢出。
-页面：Me。
+操作：点击 Blueprint section。预期：弹窗显示内容，锁定项引导高级版说明。失败表现：空弹窗、锁定项可绕过。页面：Blueprint、section sheet。
 
-## 15. 删除账号
-操作：打开删除确认但不提交。
-预期：危险操作有明确确认。
-失败表现：误触直接删除。
-页面：Me。
+## 8. 表单页检查
 
-## 16. App Store 审核风险
-操作：全局检查假数据、价格、未完成入口、医疗/财务承诺。
-预期：无假购买、无占位承诺。
-失败表现：出现价格、demo、mock、TODO。
-页面：全局。
+操作：ProfileSetup 修改日期、时间精度、城市、目标；Relationship Beta 留空提交。预期：Profile 可提交，Relationship 有表单错误。失败表现：空字段提交、日期格式无提示。页面：ProfileSetup、AddRelationship sheet。
+
+## 9. 空状态检查
+
+操作：清空 Journal 或新用户无关系。预期：显示 AppEmptyState 和下一步动作。失败表现：只有“暂无数据”。页面：SavedJournal、Relationship Beta。
+
+## 10. 错误状态检查
+
+操作：停掉 backend 后启动或刷新。预期：用户友好错误和 Retry。失败表现：技术错误码、白屏。页面：Root、Today、Ask。
+
+## 11. 弱网检查
+
+操作：用 Network Link Conditioner 或代理延迟请求。预期：loading 清楚，按钮防重复。失败表现：多次提交、长时间无反馈。页面：Generating、Ask、Paywall。
+
+## 12. 断网检查
+
+操作：断网后刷新 Today 或 Ask。预期：错误可恢复，数据安全文案。失败表现：崩溃或空白。页面：Today、Ask。
+
+## 13. 权限检查
+
+操作：真机运行。预期：当前不主动请求系统权限。失败表现：无解释请求定位/通知。页面：全局。
+
+## 14. 会员页/升级页检查
+
+操作：Preview/Blueprint/Ask/Me 打开 paywall。预期：生产构建只说明高级版和 IAP 未接入，不收款；local 构建才出现测试开通。失败表现：虚假价格、假支付成功。页面：Paywall、Me。
+
+## 15. 设置页检查
+
+操作：切换语言、查看隐私/条款/免责声明、导出数据。预期：内容可读，语言立即生效。失败表现：中英混乱、导出无反馈。页面：Me。
+
+## 16. 退出/删除账号检查
+
+操作：点击 Delete Account，取消，再确认删除。预期：二次确认，失败有提示，成功清数据回到 onboarding。失败表现：误删、无恢复提示。页面：Me、Delete dialog。
+
+## 17. 小屏 iPhone 检查
+
+操作：iPhone SE 尺寸跑完整流程。预期：按钮不被键盘遮挡，Tab 和底部操作安全区正常。失败表现：overflow、按钮看不到。页面：所有表单和 Ask。
+
+## 18. 大屏 iPhone 检查
+
+操作：iPhone Pro Max 尺寸跑完整流程。预期：内容不显得散乱，卡片宽度合理。失败表现：首屏信息稀疏、层级不清。页面：Today、Blueprint、Me。
+
+## 19. 键盘遮挡检查
+
+操作：Ask 输入长问题，Today 输入长反思。预期：输入栏和发送按钮可见。失败表现：键盘遮挡、滚动异常。页面：Ask、Today。
+
+## 20. App Store 审核风险检查
+
+操作：按审核员视角走全 App。预期：无 demo/mock/TODO 文案，无虚假购买，无专业建议承诺。失败表现：模板页、占位功能、外链购买数字服务。页面：全局。

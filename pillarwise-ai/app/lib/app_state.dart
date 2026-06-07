@@ -39,31 +39,31 @@ enum OnboardingStep {
 
 class OnboardingDraft {
   OnboardingDraft({
-    DateTime? birthDate,
-    DateTime? birthTime,
+    this.birthDate,
+    this.birthTime,
     this.birthTimePrecision = 'exact',
-    this.birthPlaceText = 'Los Angeles, CA, US',
-    this.latitude = 34.0522,
-    this.longitude = -118.2437,
-    this.timezone = 'America/Los_Angeles',
+    this.birthPlaceText = '',
+    this.latitude,
+    this.longitude,
+    this.timezone = '',
     this.sexForTraditionalCycle = 'female',
     this.trueSolarTimeEnabled = true,
     List<String>? goals,
-  }) : birthDate = birthDate ?? DateTime(1994, 8, 21),
-       birthTime = birthTime ?? DateTime(1994, 1, 1, 14, 30),
-       goals = goals ?? ['Myself'];
+  }) : goals = goals ?? ['Myself'];
 
   factory OnboardingDraft.fromMap(JsonMap map) {
     return OnboardingDraft(
       birthDate: map['birthDate'] is String
           ? DateTime.tryParse(map['birthDate']! as String)
           : null,
+      birthTime: map['birthTime'] is String
+          ? _parseTime(map['birthTime']! as String)
+          : null,
       birthTimePrecision: map['birthTimePrecision']?.toString() ?? 'exact',
-      birthPlaceText:
-          map['birthPlaceText']?.toString() ?? 'Los Angeles, CA, US',
+      birthPlaceText: map['birthPlaceText']?.toString() ?? '',
       latitude: (map['latitude'] as num?)?.toDouble(),
       longitude: (map['longitude'] as num?)?.toDouble(),
-      timezone: map['timezone']?.toString() ?? 'America/Los_Angeles',
+      timezone: map['timezone']?.toString() ?? '',
       sexForTraditionalCycle:
           map['sexForTraditionalCycle']?.toString() ?? 'female',
       trueSolarTimeEnabled: map['trueSolarTimeEnabled'] as bool? ?? true,
@@ -71,8 +71,8 @@ class OnboardingDraft {
     );
   }
 
-  final DateTime birthDate;
-  final DateTime birthTime;
+  final DateTime? birthDate;
+  final DateTime? birthTime;
   final String birthTimePrecision;
   final String birthPlaceText;
   final double? latitude;
@@ -108,14 +108,15 @@ class OnboardingDraft {
     String? sexForTraditionalCycle,
     bool? trueSolarTimeEnabled,
     List<String>? goals,
+    bool clearLocationCoordinates = false,
   }) {
     return OnboardingDraft(
       birthDate: birthDate ?? this.birthDate,
       birthTime: birthTime ?? this.birthTime,
       birthTimePrecision: birthTimePrecision ?? this.birthTimePrecision,
       birthPlaceText: birthPlaceText ?? this.birthPlaceText,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
+      latitude: clearLocationCoordinates ? null : latitude ?? this.latitude,
+      longitude: clearLocationCoordinates ? null : longitude ?? this.longitude,
       timezone: timezone ?? this.timezone,
       sexForTraditionalCycle:
           sexForTraditionalCycle ?? this.sexForTraditionalCycle,
@@ -387,6 +388,15 @@ class AppController extends StateNotifier<AppState> {
     final started = DateTime.now();
     try {
       final api = await _api;
+      final validationError = _validateDraft(state.draft);
+      if (validationError != null) {
+        state = state.copyWith(
+          loading: false,
+          step: OnboardingStep.goal,
+          error: validationError,
+        );
+        return;
+      }
       final profileResult = await api.post<JsonMap>(
         '/api/v1/birth-profiles',
         state.draft.toMap(),
@@ -601,8 +611,8 @@ class AppController extends StateNotifier<AppState> {
             'birthTime': precision == 'unknown' ? null : birthTime,
             'birthTimePrecision': precision,
             'birthPlaceText': place,
-            'latitude': place.contains('New York') ? 40.7128 : null,
-            'longitude': place.contains('New York') ? -74.006 : null,
+            'latitude': null,
+            'longitude': null,
             'timezone': timezone,
           }, _map);
       final report = await (await _api).post<JsonMap>(
@@ -748,12 +758,42 @@ String _friendly(Object error) {
   return 'Something didn’t load right. Your data is safe. Please try again.';
 }
 
-String _date(DateTime value) {
+String? _validateDraft(OnboardingDraft draft) {
+  if (draft.birthDate == null) {
+    return 'Please choose your birth date.';
+  }
+  if (draft.birthTimePrecision != 'unknown' && draft.birthTime == null) {
+    return 'Please choose your birth time or select “I don’t know.”';
+  }
+  if (draft.birthPlaceText.trim().isEmpty) {
+    return 'Please enter your birthplace.';
+  }
+  if (draft.timezone.trim().isEmpty) {
+    return 'Please enter your birth timezone.';
+  }
+  if (draft.goals.isEmpty) {
+    return 'Choose at least one focus.';
+  }
+  return null;
+}
+
+String? _date(DateTime? value) {
+  if (value == null) return null;
   final month = value.month.toString().padLeft(2, '0');
   final day = value.day.toString().padLeft(2, '0');
   return '${value.year}-$month-$day';
 }
 
-String _time(DateTime value) {
+String? _time(DateTime? value) {
+  if (value == null) return null;
   return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+}
+
+DateTime? _parseTime(String value) {
+  final parts = value.split(':');
+  if (parts.length < 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  return DateTime(1970, 1, 1, hour, minute);
 }

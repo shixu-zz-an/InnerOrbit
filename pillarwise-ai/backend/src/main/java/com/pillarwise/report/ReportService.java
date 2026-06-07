@@ -3,6 +3,7 @@ package com.pillarwise.report;
 import com.pillarwise.bazi.BaziChart;
 import com.pillarwise.bazi.BaziService;
 import com.pillarwise.bazi.InsightMapper;
+import com.pillarwise.ai.StructuredAiGenerator;
 import com.pillarwise.common.AppException;
 import com.pillarwise.profile.BirthProfile;
 import com.pillarwise.profile.BirthProfileRepository;
@@ -19,19 +20,22 @@ public class ReportService {
   private final InsightMapper insightMapper;
   private final ReportRepository reports;
   private final EntitlementService entitlementService;
+  private final StructuredAiGenerator aiGenerator;
 
   public ReportService(
       BirthProfileRepository birthProfiles,
       BaziService baziService,
       InsightMapper insightMapper,
       ReportRepository reports,
-      EntitlementService entitlementService
+      EntitlementService entitlementService,
+      StructuredAiGenerator aiGenerator
   ) {
     this.birthProfiles = birthProfiles;
     this.baziService = baziService;
     this.insightMapper = insightMapper;
     this.reports = reports;
     this.entitlementService = entitlementService;
+    this.aiGenerator = aiGenerator;
   }
 
   public Report generateLifeBlueprint(String userId, LifeBlueprintRequest request) {
@@ -50,8 +54,11 @@ public class ReportService {
     if (fullMode && !premium) {
       throw AppException.entitlement("life_blueprint_full");
     }
-    Map<String, Object> preview = lifeBlueprintContent(insight, false);
-    Map<String, Object> full = fullMode || premium ? lifeBlueprintContent(insight, true) : null;
+    Map<String, Object> preview = aiLifeBlueprint(profile, chart, insight, false)
+        .orElseGet(() -> lifeBlueprintContent(insight, false));
+    Map<String, Object> full = fullMode || premium
+        ? aiLifeBlueprint(profile, chart, insight, true).orElseGet(() -> lifeBlueprintContent(insight, true))
+        : null;
     return reports.save(userId, profile.id(), null, "life_blueprint", preview, full, true, full != null);
   }
 
@@ -88,6 +95,119 @@ public class ReportService {
         "cards", sections,
         "sections", sections
     );
+  }
+
+  private java.util.Optional<Map<String, Object>> aiLifeBlueprint(BirthProfile profile, BaziChart chart, InsightMapper.MappedInsight insight, boolean full) {
+    Map<String, Object> context = Map.of(
+        "profile", Map.of(
+            "birthProfileId", profile.id(),
+            "birthDate", profile.birthDate(),
+            "birthTimePrecision", profile.birthTimePrecision(),
+            "birthPlaceText", profile.birthPlaceText(),
+            "timezone", profile.timezone()
+        ),
+        "chart", Map.of(
+            "calcVersion", chart.calcVersion(),
+            "dayMaster", chart.dayMaster(),
+            "pillars", Map.of(
+                "year", chart.yearStem() + " " + chart.yearBranch(),
+                "month", chart.monthStem() + " " + chart.monthBranch(),
+                "day", chart.dayStem() + " " + chart.dayBranch(),
+                "hour", chart.hourStem() == null ? "unknown" : chart.hourStem() + " " + chart.hourBranch()
+            ),
+            "elementDistribution", chart.elementDistribution(),
+            "confidence", chart.confidence()
+        ),
+        "mappedInsight", Map.of(
+            "coreArchetype", insight.coreArchetype(),
+            "strengths", insight.strengths(),
+            "blindSpots", insight.blindSpots(),
+            "relationshipPattern", insight.relationshipPattern(),
+            "careerStyle", insight.careerStyle(),
+            "moneyStyle", insight.moneyStyle(),
+            "currentPhase", insight.currentPhase()
+        ),
+        "mode", full ? "full" : "preview"
+    );
+    String prompt = """
+        Generate a PillarWise life blueprint as valid JSON only.
+        Use BaZi as a reflective framework, never deterministic fate.
+        Avoid medical, legal, investment, and guaranteed prediction claims.
+        Context:
+        %s
+
+        Required JSON shape:
+        {
+          "coreArchetype": "string",
+          "headline": "string",
+          "summary": "string",
+          "cards": [
+            {
+              "id": "string",
+              "section": "string",
+              "label": "string",
+              "title": "string",
+              "body": "string",
+              "howItShowsUp": ["string"],
+              "growthEdge": "string",
+              "practicalStep": "string",
+              "reflectionQuestion": "string",
+              "locked": false
+            }
+          ],
+          "sections": "same array as cards"
+        }
+        Include %d cards. For preview lock relationship/career depth if needed. For full set locked to false.
+        """.formatted(aiGenerator.write(context), full ? 8 : 5);
+    return aiGenerator.generate(systemPrompt(), prompt, 2200).flatMap(this::normalizeBlueprint);
+  }
+
+  @SuppressWarnings("unchecked")
+  private java.util.Optional<Map<String, Object>> normalizeBlueprint(Map<String, Object> raw) {
+    Object cardsValue = raw.get("cards") == null ? raw.get("sections") : raw.get("cards");
+    if (!(cardsValue instanceof List<?> cards) || cards.isEmpty()) {
+      return java.util.Optional.empty();
+    }
+    List<Map<String, Object>> normalized = new ArrayList<>();
+    for (Object item : cards) {
+      if (!(item instanceof Map<?, ?> map)) {
+        return java.util.Optional.empty();
+      }
+      String id = text(map.get("id"), text(map.get("section"), "section_" + normalized.size()));
+      String title = text(map.get("title"), "");
+      String body = text(map.get("body"), "");
+      if (title.isBlank() || body.isBlank()) {
+        return java.util.Optional.empty();
+      }
+      normalized.add(section(
+          id,
+          text(map.get("label"), title),
+          title,
+          body,
+          text(map.get("practicalStep"), "Choose one grounded next step."),
+          Boolean.TRUE.equals(map.get("locked"))
+      ));
+    }
+    return java.util.Optional.of(Map.of(
+        "coreArchetype", text(raw.get("coreArchetype"), "Personal Blueprint"),
+        "headline", text(raw.get("headline"), "A grounded pattern is ready to work with."),
+        "summary", text(raw.get("summary"), "Use this reading as a practical reflection lens."),
+        "cards", normalized,
+        "sections", normalized
+    ));
+  }
+
+  private static String systemPrompt() {
+    return """
+        You are PillarWise AI. Produce concise, emotionally mature app copy.
+        Use the user's chart context as symbolism for self-reflection.
+        Do not claim certainty, fate, diagnosis, wealth, death, marriage timing, or emergency advice.
+        Return JSON only.
+        """;
+  }
+
+  private static String text(Object value, String fallback) {
+    return value instanceof String text && !text.isBlank() ? text.trim() : fallback;
   }
 
   private static String headlineBody(InsightMapper.MappedInsight insight) {

@@ -1,17 +1,21 @@
-# pillarwise_app
+# PillarWise AI Flutter App
 
-A new Flutter project.
+PillarWise AI is an iOS-first Flutter app for reflective Four Pillars-based personal insight. The app supports onboarding, Life Blueprint preview, Today insights, AI guide questions, Journal retention, Premium explanation, privacy controls, and local development entitlement testing.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8080 --dart-define=APP_FLAVOR=local
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Verify
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter analyze
+flutter test
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Commercialization Note
+
+`APP_FLAVOR=local` enables local Premium testing only. Production iOS monetization must use Apple In-App Purchase and server-side transaction validation before any digital service is sold.
