@@ -1,7 +1,7 @@
 package com.pillarwise.report;
 
 import com.pillarwise.bazi.BaziChart;
-import com.pillarwise.bazi.BaziRepository;
+import com.pillarwise.bazi.BaziService;
 import com.pillarwise.bazi.InsightMapper;
 import com.pillarwise.common.AppException;
 import com.pillarwise.profile.BirthProfile;
@@ -15,20 +15,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReportService {
   private final BirthProfileRepository birthProfiles;
-  private final BaziRepository charts;
+  private final BaziService baziService;
   private final InsightMapper insightMapper;
   private final ReportRepository reports;
   private final EntitlementService entitlementService;
 
   public ReportService(
       BirthProfileRepository birthProfiles,
-      BaziRepository charts,
+      BaziService baziService,
       InsightMapper insightMapper,
       ReportRepository reports,
       EntitlementService entitlementService
   ) {
     this.birthProfiles = birthProfiles;
-    this.charts = charts;
+    this.baziService = baziService;
     this.insightMapper = insightMapper;
     this.reports = reports;
     this.entitlementService = entitlementService;
@@ -43,8 +43,7 @@ public class ReportService {
     }
     BirthProfile profile = birthProfiles.findByIdForUser(profileId, userId)
         .orElseThrow(() -> AppException.notFound("Birth profile was not found."));
-    BaziChart chart = charts.findLatestByBirthProfileId(profile.id())
-        .orElseThrow(() -> AppException.notFound("Chart was not found."));
+    BaziChart chart = baziService.chartForProfile(profile);
     InsightMapper.MappedInsight insight = insightMapper.map(chart);
     boolean fullMode = "full".equalsIgnoreCase(request.mode());
     boolean premium = entitlementService.premiumActive(userId);

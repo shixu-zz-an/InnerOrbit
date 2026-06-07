@@ -11,6 +11,7 @@ class ApiClient {
           connectTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 15),
           headers: {'Content-Type': 'application/json'},
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 

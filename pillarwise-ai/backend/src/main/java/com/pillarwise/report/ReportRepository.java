@@ -2,6 +2,7 @@ package com.pillarwise.report;
 
 import com.pillarwise.common.Ids;
 import com.pillarwise.common.Jsons;
+import com.pillarwise.config.AppProperties;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -15,11 +16,13 @@ public class ReportRepository {
   private final JdbcTemplate jdbcTemplate;
   private final Jsons jsons;
   private final Clock clock;
+  private final AppProperties properties;
 
-  public ReportRepository(JdbcTemplate jdbcTemplate, Jsons jsons, Clock clock) {
+  public ReportRepository(JdbcTemplate jdbcTemplate, Jsons jsons, Clock clock, AppProperties properties) {
     this.jdbcTemplate = jdbcTemplate;
     this.jsons = jsons;
     this.clock = clock;
+    this.properties = properties;
   }
 
   public Report save(
@@ -48,7 +51,7 @@ public class ReportRepository {
         reportType,
         jsons.write(preview),
         full == null ? null : jsons.write(full),
-        "mock-v1",
+        modelVersion(),
         reportType + "-v1.0.0",
         paidRequired ? 1 : 0,
         unlocked ? 1 : 0,
@@ -90,5 +93,12 @@ public class ReportRepository {
         rs.getString("created_at"),
         rs.getString("updated_at")
     );
+  }
+
+  private String modelVersion() {
+    if (properties.ai() == null || properties.ai().model() == null || properties.ai().model().isBlank()) {
+      return "qwen-plus";
+    }
+    return properties.ai().model();
   }
 }

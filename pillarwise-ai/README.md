@@ -18,6 +18,19 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
+Run the backend with Qwen through DashScope OpenAI-compatible Chat Completions:
+
+```bash
+AI_PROVIDER=qwen AI_API_KEY=<dashscope-key> ./mvnw spring-boot:run
+```
+
+Optional overrides:
+
+```bash
+AI_MODEL=qwen-plus
+AI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+```
+
 Health:
 
 ```bash
@@ -37,5 +50,5 @@ flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8080 --dart-define=APP_F
 ## Local Flow
 
 ```text
-Onboarding -> Birth Profile -> BaZi Chart -> Life Blueprint -> Today -> AI Guide -> Relationship -> Paywall Mock -> Journal -> Settings -> Delete Account
+Onboarding -> Birth Profile -> BaZi Chart -> Life Blueprint -> Today -> AI Guide -> Relationship -> Paywall -> Journal -> Settings -> Delete Account
 ```

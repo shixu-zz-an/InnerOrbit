@@ -12,9 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
 
-@Component
 public class DeterministicBaziEngine implements BaziEngine {
   private static final String[] STEMS = {"Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"};
   private static final String[] BRANCHES = {"Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai"};
@@ -39,6 +37,11 @@ public class DeterministicBaziEngine implements BaziEngine {
       Map.entry("Xu", "Earth"),
       Map.entry("Hai", "Water")
   );
+
+  @Override
+  public String calcVersion() {
+    return "bazi-v1-deterministic-solar-approx";
+  }
 
   @Override
   public BaziChart calculate(BirthProfile profile) {
@@ -79,7 +82,7 @@ public class DeterministicBaziEngine implements BaziEngine {
     return new BaziChart(
         Ids.newId("chart"),
         profile.id(),
-        "bazi-v1-deterministic-solar-approx",
+        calcVersion(),
         yearStem,
         yearBranch,
         monthStem,

@@ -1,7 +1,7 @@
 package com.pillarwise.relationship;
 
 import com.pillarwise.bazi.BaziChart;
-import com.pillarwise.bazi.BaziRepository;
+import com.pillarwise.bazi.BaziService;
 import com.pillarwise.common.AppException;
 import com.pillarwise.common.Ids;
 import com.pillarwise.profile.BirthProfile;
@@ -25,7 +25,7 @@ public class RelationshipService {
   private final Clock clock;
   private final BirthProfileService birthProfileService;
   private final BirthProfileRepository birthProfiles;
-  private final BaziRepository charts;
+  private final BaziService baziService;
   private final ReportRepository reports;
   private final EntitlementService entitlementService;
 
@@ -34,7 +34,7 @@ public class RelationshipService {
       Clock clock,
       BirthProfileService birthProfileService,
       BirthProfileRepository birthProfiles,
-      BaziRepository charts,
+      BaziService baziService,
       ReportRepository reports,
       EntitlementService entitlementService
   ) {
@@ -42,7 +42,7 @@ public class RelationshipService {
     this.clock = clock;
     this.birthProfileService = birthProfileService;
     this.birthProfiles = birthProfiles;
-    this.charts = charts;
+    this.baziService = baziService;
     this.reports = reports;
     this.entitlementService = entitlementService;
   }
@@ -119,10 +119,10 @@ public class RelationshipService {
     BirthProfile userProfile = birthProfiles.findPrimaryByUser(userId)
         .orElseThrow(() -> AppException.notFound("Create your blueprint first."));
     String targetBirthProfileId = relationship.get("targetBirthProfileId").toString();
-    BaziChart userChart = charts.findLatestByBirthProfileId(userProfile.id())
-        .orElseThrow(() -> AppException.notFound("Your chart was not found."));
-    BaziChart targetChart = charts.findLatestByBirthProfileId(targetBirthProfileId)
+    BaziChart userChart = baziService.chartForProfile(userProfile);
+    BirthProfile targetProfile = birthProfiles.findByIdForUser(targetBirthProfileId, userId)
         .orElseThrow(() -> AppException.notFound("Their chart was not found."));
+    BaziChart targetChart = baziService.chartForProfile(targetProfile);
     Map<String, Object> preview = compatibility(relationship, userChart, targetChart);
     boolean full = "full".equalsIgnoreCase(request.mode()) || entitlementService.premiumActive(userId);
     if ("full".equalsIgnoreCase(request.mode()) && !entitlementService.premiumActive(userId)) {

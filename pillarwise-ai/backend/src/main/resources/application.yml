@@ -6,9 +6,9 @@ app:
   sqlite:
     path: ${SQLITE_PATH:./data/pillarwise.db}
   ai:
-    provider: ${AI_PROVIDER:mock}
+    provider: ${AI_PROVIDER:qwen}
     base-url: ${AI_BASE_URL:}
-    api-key: ${AI_API_KEY:}
-    model: ${AI_MODEL:mock-v1}
+    api-key: ${AI_API_KEY:${DASHSCOPE_API_KEY:}}
+    model: ${AI_MODEL:qwen-plus}
   auth:
     provider: ${AUTH_PROVIDER:dev}

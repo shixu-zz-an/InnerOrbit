@@ -1,11 +1,12 @@
 package com.pillarwise.today;
 
 import com.pillarwise.bazi.BaziChart;
-import com.pillarwise.bazi.BaziRepository;
+import com.pillarwise.bazi.BaziService;
 import com.pillarwise.bazi.InsightMapper;
 import com.pillarwise.common.AppException;
 import com.pillarwise.common.Ids;
 import com.pillarwise.common.Jsons;
+import com.pillarwise.config.AppProperties;
 import com.pillarwise.profile.BirthProfile;
 import com.pillarwise.profile.BirthProfileRepository;
 import java.time.Clock;
@@ -23,23 +24,26 @@ public class TodayService {
   private final Jsons jsons;
   private final Clock clock;
   private final BirthProfileRepository birthProfiles;
-  private final BaziRepository charts;
+  private final BaziService baziService;
   private final InsightMapper insightMapper;
+  private final AppProperties properties;
 
   public TodayService(
       JdbcTemplate jdbcTemplate,
       Jsons jsons,
       Clock clock,
       BirthProfileRepository birthProfiles,
-      BaziRepository charts,
-      InsightMapper insightMapper
+      BaziService baziService,
+      InsightMapper insightMapper,
+      AppProperties properties
   ) {
     this.jdbcTemplate = jdbcTemplate;
     this.jsons = jsons;
     this.clock = clock;
     this.birthProfiles = birthProfiles;
-    this.charts = charts;
+    this.baziService = baziService;
     this.insightMapper = insightMapper;
+    this.properties = properties;
   }
 
   public Map<String, Object> today(String userId, String birthProfileId, String dateText) {
@@ -60,20 +64,20 @@ public class TodayService {
     }
     BirthProfile profile = birthProfiles.findByIdForUser(profileId, userId)
         .orElseThrow(() -> AppException.notFound("Birth profile was not found."));
-    BaziChart chart = charts.findLatestByBirthProfileId(profile.id())
-        .orElseThrow(() -> AppException.notFound("Chart was not found."));
+    BaziChart chart = baziService.chartForProfile(profile);
     Map<String, Object> content = generate(date, insightMapper.map(chart), chart);
     String id = Ids.newId("day");
     jdbcTemplate.update(
         """
         INSERT INTO daily_insights(id, user_id, birth_profile_id, insight_date, content_json, prompt_version, model_version, created_at)
-        VALUES (?, ?, ?, ?, ?, 'daily-v1.0.0', 'mock-v1', ?)
+        VALUES (?, ?, ?, ?, ?, 'daily-v1.0.0', ?, ?)
         """,
         id,
         userId,
         profile.id(),
         date.toString(),
         jsons.write(content),
+        modelVersion(),
         Instant.now(clock).toString()
     );
     content = new LinkedHashMap<>(content);
@@ -111,5 +115,12 @@ public class TodayService {
         "weeklyTheme", insight.currentPhase(),
         "confidence", chart.confidence()
     ));
+  }
+
+  private String modelVersion() {
+    if (properties.ai() == null || properties.ai().model() == null || properties.ai().model().isBlank()) {
+      return "qwen-plus";
+    }
+    return properties.ai().model();
   }
 }

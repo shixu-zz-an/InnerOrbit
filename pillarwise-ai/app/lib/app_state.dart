@@ -126,6 +126,13 @@ class AppState {
   const AppState({
     this.initialized = false,
     this.loading = false,
+    this.savingReflection = false,
+    this.askingGuide = false,
+    this.addingRelationship = false,
+    this.activatingPremium = false,
+    this.exportingData = false,
+    this.deletingAccount = false,
+    this.activeRelationshipReportId,
     this.error,
     this.needsOnboarding = true,
     this.step = OnboardingStep.welcome,
@@ -147,6 +154,13 @@ class AppState {
 
   final bool initialized;
   final bool loading;
+  final bool savingReflection;
+  final bool askingGuide;
+  final bool addingRelationship;
+  final bool activatingPremium;
+  final bool exportingData;
+  final bool deletingAccount;
+  final String? activeRelationshipReportId;
   final String? error;
   final bool needsOnboarding;
   final OnboardingStep step;
@@ -166,6 +180,14 @@ class AppState {
   AppState copyWith({
     bool? initialized,
     bool? loading,
+    bool? savingReflection,
+    bool? askingGuide,
+    bool? addingRelationship,
+    bool? activatingPremium,
+    bool? exportingData,
+    bool? deletingAccount,
+    String? activeRelationshipReportId,
+    bool clearActiveRelationshipReport = false,
     String? error,
     bool clearError = false,
     bool? needsOnboarding,
@@ -187,6 +209,15 @@ class AppState {
     return AppState(
       initialized: initialized ?? this.initialized,
       loading: loading ?? this.loading,
+      savingReflection: savingReflection ?? this.savingReflection,
+      askingGuide: askingGuide ?? this.askingGuide,
+      addingRelationship: addingRelationship ?? this.addingRelationship,
+      activatingPremium: activatingPremium ?? this.activatingPremium,
+      exportingData: exportingData ?? this.exportingData,
+      deletingAccount: deletingAccount ?? this.deletingAccount,
+      activeRelationshipReportId: clearActiveRelationshipReport
+          ? null
+          : activeRelationshipReportId ?? this.activeRelationshipReportId,
       error: clearError ? null : error ?? this.error,
       needsOnboarding: needsOnboarding ?? this.needsOnboarding,
       step: step ?? this.step,
@@ -217,6 +248,7 @@ class AppController extends StateNotifier<AppState> {
   Future<LocalStore> get _store => ref.read(localStoreProvider.future);
 
   Future<void> initialize() async {
+    state = state.copyWith(initialized: false, loading: true, clearError: true);
     try {
       final store = await _store;
       state = state.copyWith(
@@ -226,17 +258,21 @@ class AppController extends StateNotifier<AppState> {
       final api = await _api;
       var token = await store.readToken();
       if (token == null || token.isEmpty) {
-        final session = await api.get<JsonMap>(
-          '/api/v1/auth/dev-session',
-          _map,
-        );
-        token = session['accessToken']?.toString();
-        if (token != null) await store.writeToken(token);
+        token = await _createDevSession(api, store);
       }
-      final me = await api.get<JsonMap>('/api/v1/me', _map);
+      JsonMap me;
+      try {
+        me = await api.get<JsonMap>('/api/v1/me', _map);
+      } on ApiException catch (error) {
+        if (error.code != 'UNAUTHORIZED') rethrow;
+        await store.clearAuth();
+        await _createDevSession(api, store);
+        me = await api.get<JsonMap>('/api/v1/me', _map);
+      }
       final hasProfile = me['hasPrimaryBirthProfile'] == true;
       state = state.copyWith(
         initialized: true,
+        loading: false,
         needsOnboarding: !hasProfile,
         me: me,
         entitlement: me['entitlement'] is Map
@@ -248,8 +284,21 @@ class AppController extends StateNotifier<AppState> {
         await loadMainData();
       }
     } catch (error) {
-      state = state.copyWith(initialized: true, error: _friendly(error));
+      state = state.copyWith(
+        initialized: true,
+        loading: false,
+        error: _friendly(error),
+      );
     }
+  }
+
+  Future<String?> _createDevSession(ApiClient api, LocalStore store) async {
+    final session = await api.get<JsonMap>('/api/v1/auth/dev-session', _map);
+    final token = session['accessToken']?.toString();
+    if (token != null && token.isNotEmpty) {
+      await store.writeToken(token);
+    }
+    return token;
   }
 
   Future<void> loadMainData() async {
@@ -369,8 +418,12 @@ class AppController extends StateNotifier<AppState> {
     await loadMainData();
   }
 
-  Future<void> activatePremium() async {
-    state = state.copyWith(loading: true, clearError: true);
+  Future<bool> activatePremium() async {
+    state = state.copyWith(
+      loading: true,
+      activatingPremium: true,
+      clearError: true,
+    );
     try {
       final entitlement = await (await _api).post<JsonMap>(
         '/api/v1/subscriptions/local/activate',
@@ -378,7 +431,7 @@ class AppController extends StateNotifier<AppState> {
         _map,
       );
       state = state.copyWith(
-        loading: false,
+        loading: state.birthProfile == null ? false : true,
         entitlement: entitlement,
         clearError: true,
       );
@@ -390,22 +443,32 @@ class AppController extends StateNotifier<AppState> {
         );
         state = state.copyWith(
           loading: false,
+          activatingPremium: false,
           blueprint: full,
           clearError: true,
         );
+      } else {
+        state = state.copyWith(activatingPremium: false, clearError: true);
       }
+      return true;
     } catch (error) {
-      state = state.copyWith(loading: false, error: _friendly(error));
+      state = state.copyWith(
+        loading: false,
+        activatingPremium: false,
+        error: _friendly(error),
+      );
+      return false;
     }
   }
 
-  Future<void> saveReflection(
+  Future<bool> saveReflection(
     String sourceType,
     String? sourceId,
     String prompt,
     String content,
   ) async {
-    if (content.trim().isEmpty) return;
+    if (content.trim().isEmpty) return false;
+    state = state.copyWith(savingReflection: true, clearError: true);
     try {
       final saved = await (await _api).post<JsonMap>('/api/v1/journal', {
         'sourceType': sourceType,
@@ -414,16 +477,20 @@ class AppController extends StateNotifier<AppState> {
         'content': content,
       }, _map);
       state = state.copyWith(
+        savingReflection: false,
         journal: [saved, ...state.journal],
         clearError: true,
       );
+      return true;
     } catch (error) {
-      state = state.copyWith(error: _friendly(error));
+      state = state.copyWith(savingReflection: false, error: _friendly(error));
+      return false;
     }
   }
 
-  Future<void> askGuide(String text) async {
+  Future<void> askGuide(String text, {String? localeCode}) async {
     if (text.trim().isEmpty) return;
+    state = state.copyWith(askingGuide: true, clearError: true);
     try {
       var conversationId = state.conversationId;
       final profileId = state.birthProfile?['id'];
@@ -439,9 +506,13 @@ class AppController extends StateNotifier<AppState> {
         'conversationId': conversationId,
         'birthProfileId': profileId,
         'message': text,
-        'context': {'includeBlueprint': true},
+        'context': {
+          'includeBlueprint': true,
+          if (localeCode != null && localeCode.isNotEmpty) 'locale': localeCode,
+        },
       }, _map);
       state = state.copyWith(
+        askingGuide: false,
         conversationId: conversationId,
         messages: [
           ...state.messages,
@@ -457,21 +528,22 @@ class AppController extends StateNotifier<AppState> {
     } catch (error) {
       if (error is ApiException && error.code == 'ENTITLEMENT_REQUIRED') {
         state = state.copyWith(
+          askingGuide: false,
           error:
               'You’ve used today’s free question. Unlock unlimited guidance.',
         );
       } else {
-        state = state.copyWith(error: _friendly(error));
+        state = state.copyWith(askingGuide: false, error: _friendly(error));
       }
     }
   }
 
-  Future<void> askFromToday(String text) async {
+  Future<void> askFromToday(String text, {String? localeCode}) async {
     selectTab(2);
-    await askGuide(text);
+    await askGuide(text, localeCode: localeCode);
   }
 
-  Future<void> addRelationship({
+  Future<bool> addRelationship({
     required String name,
     required String type,
     required String birthDate,
@@ -480,6 +552,7 @@ class AppController extends StateNotifier<AppState> {
     required String place,
     required String timezone,
   }) async {
+    state = state.copyWith(addingRelationship: true, clearError: true);
     try {
       final created = await (await _api)
           .post<JsonMap>('/api/v1/relationships', {
@@ -501,11 +574,17 @@ class AppController extends StateNotifier<AppState> {
       created['preview'] = report['preview'];
       created['report'] = report;
       state = state.copyWith(
+        addingRelationship: false,
         relationships: [created, ...state.relationships],
         clearError: true,
       );
+      return true;
     } catch (error) {
-      state = state.copyWith(error: _friendly(error));
+      state = state.copyWith(
+        addingRelationship: false,
+        error: _friendly(error),
+      );
+      return false;
     }
   }
 
@@ -513,6 +592,10 @@ class AppController extends StateNotifier<AppState> {
     String relationshipId, {
     bool full = false,
   }) async {
+    state = state.copyWith(
+      activeRelationshipReportId: relationshipId,
+      clearError: true,
+    );
     try {
       final report = await (await _api).post<JsonMap>(
         '/api/v1/relationships/$relationshipId/report',
@@ -532,15 +615,23 @@ class AppController extends StateNotifier<AppState> {
           else
             relationship,
       ];
-      state = state.copyWith(relationships: relationships, clearError: true);
+      state = state.copyWith(
+        relationships: relationships,
+        clearActiveRelationshipReport: true,
+        clearError: true,
+      );
       return report;
     } catch (error) {
-      state = state.copyWith(error: _friendly(error));
+      state = state.copyWith(
+        clearActiveRelationshipReport: true,
+        error: _friendly(error),
+      );
       return null;
     }
   }
 
-  Future<void> deleteAccount() async {
+  Future<bool> deleteAccount() async {
+    state = state.copyWith(deletingAccount: true, clearError: true);
     try {
       await (await _api).delete<JsonMap>('/api/v1/me', {
         'confirmation': 'DELETE',
@@ -548,13 +639,23 @@ class AppController extends StateNotifier<AppState> {
       await (await _store).clearAll();
       state = AppState.initial().copyWith(initialized: true);
       await initialize();
+      return true;
     } catch (error) {
-      state = state.copyWith(error: _friendly(error));
+      state = state.copyWith(deletingAccount: false, error: _friendly(error));
+      return false;
     }
   }
 
   Future<JsonMap> exportData() async {
-    return (await _api).get<JsonMap>('/api/v1/me/export', _map);
+    state = state.copyWith(exportingData: true, clearError: true);
+    try {
+      final data = await (await _api).get<JsonMap>('/api/v1/me/export', _map);
+      state = state.copyWith(exportingData: false, clearError: true);
+      return data;
+    } catch (error) {
+      state = state.copyWith(exportingData: false, error: _friendly(error));
+      rethrow;
+    }
   }
 
   Future<void> setLocaleCode(String? code) async {

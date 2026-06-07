@@ -4,4 +4,6 @@ import com.pillarwise.profile.BirthProfile;
 
 public interface BaziEngine {
   BaziChart calculate(BirthProfile profile);
+
+  String calcVersion();
 }
