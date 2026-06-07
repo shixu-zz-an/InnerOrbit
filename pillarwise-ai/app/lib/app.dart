@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'app_state.dart';
+import 'core/config/app_config.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_radius.dart';
 import 'core/theme/app_spacing.dart';
@@ -86,6 +87,7 @@ class OnboardingFlow extends ConsumerWidget {
     return switch (state.step) {
       OnboardingStep.welcome => const WelcomeScreen(),
       OnboardingStep.disclaimer => const DisclaimerScreen(),
+      OnboardingStep.profileSetup => const ProfileSetupScreen(),
       OnboardingStep.birthDate => const BirthDateScreen(),
       OnboardingStep.birthTime => const BirthTimeScreen(),
       OnboardingStep.birthPlace => const BirthPlaceScreen(),
@@ -214,8 +216,258 @@ class _DisclaimerScreenState extends ConsumerState<DisclaimerScreen> {
             onPressed: accepted
                 ? () => ref
                       .read(appControllerProvider.notifier)
-                      .goTo(OnboardingStep.birthDate)
+                      .goTo(OnboardingStep.profileSetup)
                 : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ProfileSetupScreen extends ConsumerWidget {
+  const ProfileSetupScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final draft = ref.watch(appControllerProvider).draft;
+    final goals = [
+      _GoalOption('Myself', l.goalMyself, CupertinoIcons.person),
+      _GoalOption('Love & relationships', l.goalLove, CupertinoIcons.heart),
+      _GoalOption('Career direction', l.goalCareer, CupertinoIcons.briefcase),
+      _GoalOption(
+        'Money patterns',
+        l.goalMoney,
+        CupertinoIcons.money_dollar_circle,
+      ),
+      _GoalOption('Life timing', l.goalTiming, CupertinoIcons.clock),
+      _GoalOption(
+        'Emotional growth',
+        l.goalGrowth,
+        CupertinoIcons.leaf_arrow_circlepath,
+      ),
+    ];
+    return StepScaffold(
+      step: OnboardingStep.profileSetup,
+      title: _uiText(
+        context,
+        en: 'Set up your first blueprint',
+        zh: '设置你的第一份蓝图',
+      ),
+      subtitle: _uiText(
+        context,
+        en: 'A few details let PillarWise calculate the chart and turn it into a practical reading.',
+        zh: '用几项必要信息完成命盘计算，并生成可执行的个人解读。',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSection(
+            title: l.birthDateTitle,
+            child: AppPickerPanel(
+              height: 150,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: draft.birthDate,
+                minimumDate: DateTime(1900),
+                maximumDate: DateTime.now(),
+                onDateTimeChanged: (value) => ref
+                    .read(appControllerProvider.notifier)
+                    .updateDraft(draft.copyWith(birthDate: value)),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppSection(
+            title: l.birthTimeTitle,
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoSlidingSegmentedControl<String>(
+                    groupValue: draft.birthTimePrecision,
+                    children: {
+                      'exact': Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(l.timeExact),
+                      ),
+                      'approximate': Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(l.timeApprox),
+                      ),
+                      'unknown': Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Text(l.timeUnknown),
+                      ),
+                    },
+                    onValueChanged: (value) {
+                      if (value != null) {
+                        ref
+                            .read(appControllerProvider.notifier)
+                            .updateDraft(
+                              draft.copyWith(birthTimePrecision: value),
+                            );
+                      }
+                    },
+                  ),
+                ),
+                if (draft.birthTimePrecision != 'unknown') ...[
+                  const SizedBox(height: AppSpacing.md),
+                  AppPickerPanel(
+                    height: 150,
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.time,
+                      initialDateTime: draft.birthTime,
+                      onDateTimeChanged: (value) => ref
+                          .read(appControllerProvider.notifier)
+                          .updateDraft(draft.copyWith(birthTime: value)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppSection(
+            title: l.birthPlaceTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppInfoRow(
+                  icon: CupertinoIcons.location,
+                  label: l.selectedBirthplace,
+                  value: draft.birthPlaceText,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    AppTag(
+                      text: 'Los Angeles',
+                      selected: draft.birthPlaceText.contains('Los Angeles'),
+                      onTap: () => ref
+                          .read(appControllerProvider.notifier)
+                          .updateDraft(
+                            draft.copyWith(
+                              birthPlaceText: 'Los Angeles, CA, US',
+                              latitude: 34.0522,
+                              longitude: -118.2437,
+                              timezone: 'America/Los_Angeles',
+                            ),
+                          ),
+                    ),
+                    AppTag(
+                      text: 'New York',
+                      selected: draft.birthPlaceText.contains('New York'),
+                      onTap: () => ref
+                          .read(appControllerProvider.notifier)
+                          .updateDraft(
+                            draft.copyWith(
+                              birthPlaceText: 'New York, NY, US',
+                              latitude: 40.7128,
+                              longitude: -74.006,
+                              timezone: 'America/New_York',
+                            ),
+                          ),
+                    ),
+                    AppTag(
+                      text: 'London',
+                      selected: draft.birthPlaceText.contains('London'),
+                      onTap: () => ref
+                          .read(appControllerProvider.notifier)
+                          .updateDraft(
+                            draft.copyWith(
+                              birthPlaceText: 'London, UK',
+                              latitude: 51.5072,
+                              longitude: -0.1276,
+                              timezone: 'Europe/London',
+                            ),
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _uiText(
+                    context,
+                    en: 'More cities should be added before a broad public launch.',
+                    zh: '公开上线前建议继续补充更多城市。',
+                  ),
+                  style: AppTextStyles.footnote.copyWith(
+                    color: AppColors.inkMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppSection(
+            title: l.traditionalTitle,
+            child: CupertinoSlidingSegmentedControl<String>(
+              groupValue: draft.sexForTraditionalCycle,
+              children: {
+                'female': Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: Text(l.female),
+                ),
+                'male': Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: Text(l.male),
+                ),
+                'prefer_not_to_say': Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: Text(l.preferNot),
+                ),
+              },
+              onValueChanged: (value) {
+                if (value != null) {
+                  ref
+                      .read(appControllerProvider.notifier)
+                      .updateDraft(
+                        draft.copyWith(sexForTraditionalCycle: value),
+                      );
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppSection(
+            title: l.goalTitle,
+            child: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final goal in goals)
+                  AppTag(
+                    text: goal.label,
+                    icon: goal.icon,
+                    selected: draft.goals.contains(goal.value),
+                    onTap: () {
+                      final next = [...draft.goals];
+                      if (next.contains(goal.value)) {
+                        next.remove(goal.value);
+                      } else if (next.length < 3) {
+                        next.add(goal.value);
+                      }
+                      ref
+                          .read(appControllerProvider.notifier)
+                          .updateDraft(draft.copyWith(goals: next));
+                    },
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            text: l.generateBlueprint,
+            icon: CupertinoIcons.sparkles,
+            onPressed: draft.goals.isEmpty
+                ? null
+                : () => ref
+                      .read(appControllerProvider.notifier)
+                      .generateProfileAndPreview(),
           ),
         ],
       ),
@@ -663,7 +915,9 @@ class _MainTabsState extends ConsumerState<MainTabs> {
   void initState() {
     super.initState();
     controller = CupertinoTabController(
-      initialIndex: ref.read(appControllerProvider).selectedTab,
+      initialIndex: _visibleTabIndex(
+        ref.read(appControllerProvider).selectedTab,
+      ),
     );
   }
 
@@ -679,8 +933,9 @@ class _MainTabsState extends ConsumerState<MainTabs> {
     ref.listen<int>(
       appControllerProvider.select((state) => state.selectedTab),
       (_, next) {
-        if (controller.index != next) {
-          controller.index = next;
+        final visibleIndex = _visibleTabIndex(next);
+        if (controller.index != visibleIndex) {
+          controller.index = visibleIndex;
         }
       },
     );
@@ -703,10 +958,6 @@ class _MainTabsState extends ConsumerState<MainTabs> {
             label: l.tabAsk,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(CupertinoIcons.heart),
-            label: l.tabLove,
-          ),
-          BottomNavigationBarItem(
             icon: const Icon(CupertinoIcons.person_crop_circle),
             label: l.tabMe,
           ),
@@ -718,7 +969,6 @@ class _MainTabsState extends ConsumerState<MainTabs> {
             0 => const TodayScreen(),
             1 => const BlueprintScreen(),
             2 => const AskScreen(),
-            3 => const LoveScreen(),
             _ => const MeScreen(),
           },
         );
@@ -749,6 +999,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final l = context.l10n;
     final state = ref.watch(appControllerProvider);
     final today = state.today;
+    final latestJournal = state.journal.isEmpty ? null : state.journal.first;
     Future<void> saveReflection() async {
       final todayData = today;
       if (todayData == null) return;
@@ -807,10 +1058,55 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               title: _copy(context, today['greeting']) ?? l.tabToday,
               subtitle: _uiText(
                 context,
-                en: 'A focused reading for what deserves your attention now.',
-                zh: '为此刻最值得关注的事，保留一个清晰入口。',
+                en: 'One clear reading, one next step, one place to reflect.',
+                zh: '一个今日重点，一个下一步，一处沉淀反思。',
               ),
             ),
+            AppCard(
+              tone: AppTone.primary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppStatusTag(text: l.todayFocus, tone: AppTone.primary),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    _copy(context, _asMap(today['focus'])['title']) ?? '',
+                    style: AppTextStyles.title2,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    _copy(context, _asMap(today['focus'])['body']) ?? '',
+                    style: AppTextStyles.callout.copyWith(
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    text: _uiText(
+                      context,
+                      en: 'Ask the guide to break this down',
+                      zh: '让向导帮我拆解',
+                    ),
+                    icon: CupertinoIcons.chat_bubble_2,
+                    onPressed: () {
+                      final focus = _asMap(today['focus']);
+                      final prompt =
+                          '${focus['title'] ?? ''}\n${focus['body'] ?? ''}'
+                              .trim();
+                      ref
+                          .read(appControllerProvider.notifier)
+                          .askFromToday(
+                            prompt,
+                            localeCode: Localizations.localeOf(
+                              context,
+                            ).languageCode,
+                          );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
                 final themeMetric = AppMetricCard(
@@ -841,25 +1137,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     Expanded(child: actionMetric),
                   ],
                 );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppInsightCard(
-              label: l.todayFocus,
-              title: _copy(context, _asMap(today['focus'])['title']) ?? '',
-              body: _copy(context, _asMap(today['focus'])['body']) ?? '',
-              actionText: l.askAboutThis,
-              tone: AppTone.primary,
-              onAction: () {
-                final focus = _asMap(today['focus']);
-                final prompt = '${focus['title'] ?? ''}\n${focus['body'] ?? ''}'
-                    .trim();
-                ref
-                    .read(appControllerProvider.notifier)
-                    .askFromToday(
-                      prompt,
-                      localeCode: Localizations.localeOf(context).languageCode,
-                    );
               },
             ),
             const SizedBox(height: AppSpacing.md),
@@ -908,6 +1185,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               },
             ),
             const SizedBox(height: AppSpacing.lg),
+            if (latestJournal != null) ...[
+              AppSectionHeader(
+                text: _uiText(
+                  context,
+                  en: 'Continue from last time',
+                  zh: '继续上次沉淀',
+                ),
+              ),
+              AppInsightCard(
+                label: _journalLabel(context, latestJournal),
+                title:
+                    _copy(context, latestJournal['prompt']) ??
+                    _uiText(context, en: 'Recent reflection', zh: '最近反思'),
+                body: latestJournal['content']?.toString() ?? '',
+                tone: AppTone.secondary,
+                actionText: _uiText(context, en: 'View journal', zh: '查看日记'),
+                onAction: () => Navigator.of(context).push(
+                  CupertinoPageRoute<void>(
+                    builder: (_) => const SavedJournalScreen(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             AppInput(
               label: _copy(context, today['reflectionQuestion']) ?? '',
               controller: reflection,
@@ -1320,6 +1621,7 @@ class MeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final state = ref.watch(appControllerProvider);
+    final localBuild = ref.watch(appConfigProvider).flavor == 'local';
     final premium = _asMap(state.entitlement)['premiumActive'] == true;
     return AppPage(
       title: l.tabMe,
@@ -1372,57 +1674,82 @@ class MeScreen extends ConsumerWidget {
                   ),
                 ),
                 AppListTile(
-                  title: l.restorePurchases,
+                  title: _uiText(
+                    context,
+                    en: 'Upgrade information',
+                    zh: '了解高级版',
+                  ),
+                  subtitle: _uiText(
+                    context,
+                    en: 'Full blueprint, more guide questions, and deeper relationship reports.',
+                    zh: '完整蓝图、更多 AI 追问和更深入的关系报告。',
+                  ),
                   leading: const AppAvatar(
-                    icon: CupertinoIcons.arrow_clockwise,
+                    icon: CupertinoIcons.sparkles,
                     tone: AppTone.primary,
                     size: 34,
                   ),
-                  trailing: state.activatingPremium
-                      ? const CupertinoActivityIndicator()
-                      : const Icon(
-                          CupertinoIcons.arrow_clockwise,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                  onTap: state.activatingPremium
-                      ? null
-                      : () async {
-                          final ok = await ref
-                              .read(appControllerProvider.notifier)
-                              .activatePremium();
-                          if (!context.mounted) return;
-                          showNotice(
-                            context,
-                            ok
-                                ? _uiText(
-                                    context,
-                                    en: 'Premium active',
-                                    zh: '高级版已开通',
-                                  )
-                                : _uiText(
-                                    context,
-                                    en: 'Restore failed',
-                                    zh: '恢复失败',
-                                  ),
-                            ok
-                                ? _uiText(
-                                    context,
-                                    en: 'Your subscription is ready.',
-                                    zh: '你的订阅状态已更新。',
-                                  )
-                                : _nullableErrorCopy(
-                                        context,
-                                        ref.read(appControllerProvider).error,
-                                      ) ??
-                                      _uiText(
-                                        context,
-                                        en: 'Please try again later.',
-                                        zh: '请稍后再试。',
-                                      ),
-                          );
-                        },
+                  showChevron: true,
+                  onTap: () => showPaywall(context, ref, source: 'me_plan'),
                 ),
+                if (localBuild)
+                  AppListTile(
+                    title: _uiText(
+                      context,
+                      en: 'Enable local Premium test',
+                      zh: '开启本地高级版测试',
+                    ),
+                    subtitle: _uiText(
+                      context,
+                      en: 'Development only. Production must use Apple In-App Purchase.',
+                      zh: '仅限开发测试。正式版必须接入 Apple IAP。',
+                    ),
+                    leading: const AppAvatar(
+                      icon: CupertinoIcons.hammer,
+                      tone: AppTone.warning,
+                      size: 34,
+                    ),
+                    trailing: state.activatingPremium
+                        ? const CupertinoActivityIndicator()
+                        : null,
+                    onTap: state.activatingPremium
+                        ? null
+                        : () async {
+                            final ok = await ref
+                                .read(appControllerProvider.notifier)
+                                .activatePremium();
+                            if (!context.mounted) return;
+                            showNotice(
+                              context,
+                              ok
+                                  ? _uiText(
+                                      context,
+                                      en: 'Local Premium enabled',
+                                      zh: '本地高级版已开启',
+                                    )
+                                  : _uiText(
+                                      context,
+                                      en: 'Local unlock failed',
+                                      zh: '本地开通失败',
+                                    ),
+                              ok
+                                  ? _uiText(
+                                      context,
+                                      en: 'This is a development-only entitlement.',
+                                      zh: '这是仅限开发环境的权益。',
+                                    )
+                                  : _nullableErrorCopy(
+                                          context,
+                                          ref.read(appControllerProvider).error,
+                                        ) ??
+                                        _uiText(
+                                          context,
+                                          en: 'Please try again later.',
+                                          zh: '请稍后再试。',
+                                        ),
+                            );
+                          },
+                  ),
                 AppListTile(
                   title: l.manageSubscription,
                   subtitle: l.managedInAppStore,
@@ -1434,6 +1761,34 @@ class MeScreen extends ConsumerWidget {
                   showDivider: false,
                 ),
               ],
+            ),
+          ),
+          AppSectionHeader(
+            text: _uiText(context, en: 'Labs', zh: '实验功能'),
+          ),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: AppListTile(
+              title: l.tabLove,
+              subtitle: _uiText(
+                context,
+                en: 'Relationship insights are available as a secondary workflow while the core product matures.',
+                zh: '关系洞察暂作为二级功能保留，优先打磨核心自我洞察闭环。',
+              ),
+              leading: const AppAvatar(
+                icon: CupertinoIcons.heart,
+                tone: AppTone.secondary,
+                size: 34,
+              ),
+              trailing: AppStatusTag(
+                text: _uiText(context, en: 'Beta', zh: 'Beta'),
+                tone: AppTone.warning,
+              ),
+              showChevron: true,
+              showDivider: false,
+              onTap: () => Navigator.of(context).push(
+                CupertinoPageRoute<void>(builder: (_) => const LoveScreen()),
+              ),
             ),
           ),
           AppSectionHeader(text: l.saved),
@@ -1671,8 +2026,8 @@ class StepScaffold extends StatelessWidget {
           AppPageHeader(
             eyebrow: _uiText(
               context,
-              en: 'Step ${(_progressForStep(step) * 6).ceil().clamp(1, 6)} of 6',
-              zh: '第 ${(_progressForStep(step) * 6).ceil().clamp(1, 6)} / 6 步',
+              en: 'Step ${_stepNumber(step)} of 3',
+              zh: '第 ${_stepNumber(step)} / 3 步',
             ),
             title: title,
             subtitle: subtitle,
@@ -1833,8 +2188,17 @@ class _GoalOption {
   final IconData icon;
 }
 
-void showPaywall(BuildContext context, WidgetRef ref) {
+void showPaywall(
+  BuildContext context,
+  WidgetRef ref, {
+  String source = 'inline',
+}) {
   final l = context.l10n;
+  final localBuild = ref.read(appConfigProvider).flavor == 'local';
+  ref.read(appControllerProvider.notifier).trackEvent('paywall_viewed', {
+    'source': source,
+    'local_build': localBuild,
+  });
   showCupertinoModalPopup<void>(
     context: context,
     builder: (sheetContext) {
@@ -1885,7 +2249,19 @@ void showPaywall(BuildContext context, WidgetRef ref) {
             title: Text(l.paywallTitle),
             message: Column(
               children: [
-                Text(l.paywallBody),
+                Text(
+                  localBuild
+                      ? _uiText(
+                          context,
+                          en: 'Premium includes the full blueprint, more AI follow-up, and deeper relationship reports. This local build can enable it for testing; production must use Apple In-App Purchase.',
+                          zh: '高级版包含完整蓝图、更多 AI 追问和更深入的关系报告。当前本地构建可用于测试开通；正式版必须接入 Apple IAP。',
+                        )
+                      : _uiText(
+                          context,
+                          en: 'Premium will include the full blueprint, more AI follow-up, and deeper relationship reports. In-App Purchase is not connected yet, so this build will not take payment.',
+                          zh: '高级版将包含完整蓝图、更多 AI 追问和更深入的关系报告。当前版本尚未接入 App 内购买，不会收取费用。',
+                        ),
+                ),
                 if (actionError != null) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
@@ -1899,22 +2275,37 @@ void showPaywall(BuildContext context, WidgetRef ref) {
               ],
             ),
             actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  if (submitting) return;
-                  activate(setSheetState);
-                },
-                child: submitting
-                    ? const CupertinoActivityIndicator()
-                    : Text(l.startAnnual),
-              ),
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  if (submitting) return;
-                  activate(setSheetState);
-                },
-                child: Text(l.restorePurchases),
-              ),
+              if (localBuild)
+                CupertinoActionSheetAction(
+                  onPressed: () {
+                    if (submitting) return;
+                    ref.read(appControllerProvider.notifier).trackEvent(
+                      'upgrade_tapped',
+                      {'source': source, 'mode': 'local_test'},
+                    );
+                    activate(setSheetState);
+                  },
+                  child: submitting
+                      ? const CupertinoActivityIndicator()
+                      : Text(
+                          _uiText(
+                            context,
+                            en: 'Enable Local Premium Test',
+                            zh: '开启本地高级版测试',
+                          ),
+                        ),
+                )
+              else
+                CupertinoActionSheetAction(
+                  onPressed: () {
+                    ref.read(appControllerProvider.notifier).trackEvent(
+                      'upgrade_tapped',
+                      {'source': source, 'mode': 'iap_not_ready'},
+                    );
+                    Navigator.of(sheetContext).pop();
+                  },
+                  child: Text(_uiText(context, en: 'Got it', zh: '我知道了')),
+                ),
             ],
             cancelButton: CupertinoActionSheetAction(
               onPressed: () {
@@ -2383,7 +2774,8 @@ AppTone _toneForLabel(String? label) {
 
 double _progressForStep(OnboardingStep step) {
   return switch (step) {
-    OnboardingStep.disclaimer => 1 / 6,
+    OnboardingStep.disclaimer => 2 / 3,
+    OnboardingStep.profileSetup => 1,
     OnboardingStep.birthDate => 2 / 6,
     OnboardingStep.birthTime => 3 / 6,
     OnboardingStep.birthPlace => 4 / 6,
@@ -2392,6 +2784,16 @@ double _progressForStep(OnboardingStep step) {
     _ => 0,
   };
 }
+
+int _stepNumber(OnboardingStep step) {
+  return switch (step) {
+    OnboardingStep.disclaimer => 2,
+    OnboardingStep.profileSetup => 3,
+    _ => 1,
+  };
+}
+
+int _visibleTabIndex(int index) => index < 0 || index > 3 ? 0 : index;
 
 JsonMap _asMap(Object? value) =>
     value is Map ? Map<String, Object?>.from(value) : <String, Object?>{};

@@ -851,13 +851,13 @@ abstract class AppLocalizations {
   /// No description provided for @paywallBody.
   ///
   /// In en, this message translates to:
-  /// **'Full personality reading, daily personalized insights, unlimited AI follow-up, and relationship reports.\n\nAnnual - Best value - \$79.99/year\nMonthly - \$14.99/month\nSubscription renews automatically unless canceled at least 24 hours before the end of the current period.'**
+  /// **'Premium is planned for full blueprint access, more AI follow-up, and deeper relationship reports. In-App Purchase must be connected before this can be sold on iOS.'**
   String get paywallBody;
 
   /// No description provided for @startAnnual.
   ///
   /// In en, this message translates to:
-  /// **'Start Annual Plan'**
+  /// **'Learn about Premium'**
   String get startAnnual;
 
   /// No description provided for @appLanguageTitle.

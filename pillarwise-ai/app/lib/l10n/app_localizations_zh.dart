@@ -391,10 +391,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get paywallBody =>
-      '完整人格解读、每日个性化洞察、无限 AI 追问，以及关系报告。\n\n年度 - 最划算 - \$79.99/年\n月度 - \$14.99/月\n订阅会自动续订，除非你在当前周期结束前至少 24 小时取消。';
+      '高级版计划包含完整蓝图、更多 AI 追问和更深入的关系报告。iOS 上架销售前必须接入 Apple App 内购买。';
 
   @override
-  String get startAnnual => '开始年度方案';
+  String get startAnnual => '了解高级版';
 
   @override
   String get appLanguageTitle => 'App 语言';

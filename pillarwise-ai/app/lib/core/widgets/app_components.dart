@@ -799,6 +799,26 @@ class AppLoadingState extends AppLoading {
   const AppLoadingState({super.key, required super.text});
 }
 
+class AppRetryButton extends StatelessWidget {
+  const AppRetryButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+  });
+
+  final String text;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      text: text,
+      icon: CupertinoIcons.arrow_clockwise,
+      onPressed: onPressed,
+    );
+  }
+}
+
 class AppErrorState extends StatelessWidget {
   const AppErrorState({
     super.key,
@@ -841,6 +861,114 @@ class AppErrorState extends StatelessWidget {
             AppButton(text: actionText, onPressed: onAction),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class AppSuccessState extends StatelessWidget {
+  const AppSuccessState({
+    super.key,
+    required this.title,
+    required this.message,
+    this.actionText,
+    this.onAction,
+  });
+
+  final String title;
+  final String message;
+  final String? actionText;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      title: title,
+      message: message,
+      icon: CupertinoIcons.checkmark_seal_fill,
+      action: actionText == null || onAction == null
+          ? null
+          : AppButton(text: actionText!, onPressed: onAction),
+    );
+  }
+}
+
+class AppOfflineState extends StatelessWidget {
+  const AppOfflineState({
+    super.key,
+    required this.onRetry,
+    this.title = 'Connection unavailable',
+    this.message = 'Check your network and try again.',
+    this.retryText = 'Try again',
+  });
+
+  final VoidCallback onRetry;
+  final String title;
+  final String message;
+  final String retryText;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppErrorState(
+      title: title,
+      message: message,
+      actionText: retryText,
+      onAction: onRetry,
+    );
+  }
+}
+
+class AppPermissionState extends StatelessWidget {
+  const AppPermissionState({
+    super.key,
+    required this.title,
+    required this.message,
+    this.actionText,
+    this.onAction,
+  });
+
+  final String title;
+  final String message;
+  final String? actionText;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      title: title,
+      message: message,
+      icon: CupertinoIcons.lock_shield,
+      action: actionText == null || onAction == null
+          ? null
+          : AppButton(text: actionText!, onPressed: onAction),
+    );
+  }
+}
+
+class AppLockedState extends StatelessWidget {
+  const AppLockedState({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.actionText,
+    required this.onAction,
+  });
+
+  final String title;
+  final String message;
+  final String actionText;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      title: title,
+      message: message,
+      icon: CupertinoIcons.lock_fill,
+      action: AppButton(
+        text: actionText,
+        icon: CupertinoIcons.sparkles,
+        onPressed: onAction,
       ),
     );
   }
@@ -899,6 +1027,58 @@ class AppStatusTag extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: AppTextStyles.caption.copyWith(color: colors.accent),
+      ),
+    );
+  }
+}
+
+class AppProBadge extends StatelessWidget {
+  const AppProBadge({super.key, this.text = 'Pro'});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppStatusTag(text: text, tone: AppTone.warning);
+  }
+}
+
+class AppFeatureLock extends StatelessWidget {
+  const AppFeatureLock({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.actionText,
+    required this.onAction,
+  });
+
+  final String title;
+  final String message;
+  final String actionText;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      tone: AppTone.warning,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppProBadge(),
+          const SizedBox(height: AppSpacing.sm),
+          Text(title, style: AppTextStyles.title3),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            message,
+            style: AppTextStyles.callout.copyWith(color: AppColors.inkMuted),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            text: actionText,
+            icon: CupertinoIcons.sparkles,
+            onPressed: onAction,
+          ),
+        ],
       ),
     );
   }

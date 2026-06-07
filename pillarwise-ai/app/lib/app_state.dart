@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_config.dart';
@@ -25,6 +27,7 @@ final appControllerProvider = StateNotifierProvider<AppController, AppState>((
 enum OnboardingStep {
   welcome,
   disclaimer,
+  profileSetup,
   birthDate,
   birthTime,
   birthPlace,
@@ -283,12 +286,17 @@ class AppController extends StateNotifier<AppState> {
       if (hasProfile) {
         await loadMainData();
       }
+      trackEvent('app_initialized', {
+        'has_profile': hasProfile,
+        'locale': state.localeCode ?? 'system',
+      });
     } catch (error) {
       state = state.copyWith(
         initialized: true,
         loading: false,
         error: _friendly(error),
       );
+      trackEvent('app_initialize_failed', {'reason': _friendly(error)});
     }
   }
 
@@ -348,8 +356,14 @@ class AppController extends StateNotifier<AppState> {
         journal: _list(journal['entries']),
         clearError: true,
       );
+      trackEvent('main_data_loaded', {
+        'has_today': today.isNotEmpty,
+        'journal_count': state.journal.length,
+        'relationship_count': state.relationships.length,
+      });
     } catch (error) {
       state = state.copyWith(error: _friendly(error));
+      trackEvent('main_data_failed', {'reason': _friendly(error)});
     }
   }
 
@@ -364,6 +378,7 @@ class AppController extends StateNotifier<AppState> {
   }
 
   Future<void> generateProfileAndPreview() async {
+    trackEvent('core_loop_started', {'action': 'generate_blueprint'});
     state = state.copyWith(
       step: OnboardingStep.generating,
       loading: true,
@@ -400,12 +415,17 @@ class AppController extends StateNotifier<AppState> {
         needsOnboarding: true,
         clearError: true,
       );
+      trackEvent('core_loop_completed', {'action': 'generate_blueprint'});
     } catch (error) {
       state = state.copyWith(
         loading: false,
         step: OnboardingStep.generating,
         error: _friendly(error),
       );
+      trackEvent('core_loop_failed', {
+        'action': 'generate_blueprint',
+        'reason': _friendly(error),
+      });
     }
   }
 
@@ -415,10 +435,12 @@ class AppController extends StateNotifier<AppState> {
       selectedTab: 0,
       clearError: true,
     );
+    trackEvent('onboarding_completed', {'entry': 'preview'});
     await loadMainData();
   }
 
   Future<bool> activatePremium() async {
+    trackEvent('upgrade_tapped', {'source': 'local_test_unlock'});
     state = state.copyWith(
       loading: true,
       activatingPremium: true,
@@ -450,6 +472,7 @@ class AppController extends StateNotifier<AppState> {
       } else {
         state = state.copyWith(activatingPremium: false, clearError: true);
       }
+      trackEvent('upgrade_completed', {'source': 'local_test_unlock'});
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -457,6 +480,7 @@ class AppController extends StateNotifier<AppState> {
         activatingPremium: false,
         error: _friendly(error),
       );
+      trackEvent('upgrade_failed', {'reason': _friendly(error)});
       return false;
     }
   }
@@ -481,15 +505,24 @@ class AppController extends StateNotifier<AppState> {
         journal: [saved, ...state.journal],
         clearError: true,
       );
+      trackEvent('retention_action_completed', {
+        'action': 'save_reflection',
+        'source_type': sourceType,
+      });
       return true;
     } catch (error) {
       state = state.copyWith(savingReflection: false, error: _friendly(error));
+      trackEvent('retention_action_failed', {
+        'action': 'save_reflection',
+        'reason': _friendly(error),
+      });
       return false;
     }
   }
 
   Future<void> askGuide(String text, {String? localeCode}) async {
     if (text.trim().isEmpty) return;
+    trackEvent('core_action_started', {'action': 'ask_guide'});
     state = state.copyWith(askingGuide: true, clearError: true);
     try {
       var conversationId = state.conversationId;
@@ -525,6 +558,7 @@ class AppController extends StateNotifier<AppState> {
         ],
         clearError: true,
       );
+      trackEvent('core_action_completed', {'action': 'ask_guide'});
     } catch (error) {
       if (error is ApiException && error.code == 'ENTITLEMENT_REQUIRED') {
         state = state.copyWith(
@@ -532,8 +566,13 @@ class AppController extends StateNotifier<AppState> {
           error:
               'You’ve used today’s free question. Unlock unlimited guidance.',
         );
+        trackEvent('paywall_triggered', {'source': 'ai_quota'});
       } else {
         state = state.copyWith(askingGuide: false, error: _friendly(error));
+        trackEvent('core_action_failed', {
+          'action': 'ask_guide',
+          'reason': _friendly(error),
+        });
       }
     }
   }
@@ -578,12 +617,14 @@ class AppController extends StateNotifier<AppState> {
         relationships: [created, ...state.relationships],
         clearError: true,
       );
+      trackEvent('relationship_preview_created');
       return true;
     } catch (error) {
       state = state.copyWith(
         addingRelationship: false,
         error: _friendly(error),
       );
+      trackEvent('relationship_preview_failed', {'reason': _friendly(error)});
       return false;
     }
   }
@@ -669,6 +710,22 @@ class AppController extends StateNotifier<AppState> {
 
   void selectTab(int index) {
     state = state.copyWith(selectedTab: index, clearError: true);
+    trackEvent('screen_viewed', {'tab_index': index});
+  }
+
+  void trackEvent(String eventName, [JsonMap properties = const {}]) {
+    unawaited(_trackEvent(eventName, properties));
+  }
+
+  Future<void> _trackEvent(String eventName, JsonMap properties) async {
+    try {
+      await (await _api).post<JsonMap>('/api/v1/analytics/events', {
+        'eventName': eventName,
+        'properties': properties,
+      }, _map);
+    } catch (_) {
+      // Analytics must never block the product path.
+    }
   }
 
   Future<void> _saveDraft() async {

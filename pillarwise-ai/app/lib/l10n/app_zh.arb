@@ -135,8 +135,8 @@
   "deleteTitle": "删除账号？",
   "deleteBody": "这会移除你的出生资料、命盘、报告、对话、日记条目和本地订阅状态。此操作无法撤销。",
   "paywallTitle": "解锁完整人生蓝图",
-  "paywallBody": "完整人格解读、每日个性化洞察、无限 AI 追问，以及关系报告。\n\n年度 - 最划算 - $79.99/年\n月度 - $14.99/月\n订阅会自动续订，除非你在当前周期结束前至少 24 小时取消。",
-  "startAnnual": "开始年度方案",
+  "paywallBody": "高级版计划包含完整蓝图、更多 AI 追问和更深入的关系报告。iOS 上架销售前必须接入 Apple App 内购买。",
+  "startAnnual": "了解高级版",
   "appLanguageTitle": "App 语言",
   "exportTitle": "导出我的数据"
 }

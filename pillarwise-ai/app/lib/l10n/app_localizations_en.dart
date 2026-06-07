@@ -405,10 +405,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paywallBody =>
-      'Full personality reading, daily personalized insights, unlimited AI follow-up, and relationship reports.\n\nAnnual - Best value - \$79.99/year\nMonthly - \$14.99/month\nSubscription renews automatically unless canceled at least 24 hours before the end of the current period.';
+      'Premium is planned for full blueprint access, more AI follow-up, and deeper relationship reports. In-App Purchase must be connected before this can be sold on iOS.';
 
   @override
-  String get startAnnual => 'Start Annual Plan';
+  String get startAnnual => 'Learn about Premium';
 
   @override
   String get appLanguageTitle => 'App Language';
